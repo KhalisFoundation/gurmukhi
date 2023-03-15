@@ -80,3 +80,12 @@ yarn prettier --write .
 ```
 eslint .
 ```
+# firbase
+
+``` 
+firebase login
+firebase init
+firebase deploy
+firebase
+```
+
