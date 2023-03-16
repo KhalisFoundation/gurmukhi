@@ -76,16 +76,17 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 ```
 yarn prettier --write .
 ```
+
 ## eslint
+
 ```
-eslint .
+eslint src
 ```
+
 # firbase
 
-``` 
+```
 firebase login
 firebase init
 firebase deploy
-firebase
 ```
-
