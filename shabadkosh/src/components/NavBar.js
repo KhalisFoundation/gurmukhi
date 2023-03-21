@@ -18,6 +18,9 @@ import ReviewWord from "./words/ReviewWord";
 import DeleteWord from "./words/DeleteWord";
 
 import { Navbar, NavDropdown, Container } from "react-bootstrap";
+import { UserAuthContextProvider } from "./UserAuthContext";
+import Signup from "./auth/Signup";
+import ProtectedRoute from "./ProtectedRoute";
 
 const NavBar = () => {
   return (
@@ -66,31 +69,117 @@ const NavBar = () => {
           </Navbar.Collapse>
         </Container>
       </Navbar>
-      <Routes>
-        <Route path="/" element={<Home />}></Route>
-        <Route path="/home" element={<Home />}></Route>
-        <Route path="/about" element={<About />}></Route>
-        <Route path="/contact" element={<Contact />}></Route>
-        <Route path="/search" element={<Search />}></Route>
-        <Route path="/searchpage" element={<SearchPage />}></Route>
+      <UserAuthContextProvider>
+        <Routes>
+          <Route path="/" element={<Login />}></Route>
 
-        {/* auth */}
-        <Route path="/login" element={<Login />}></Route>
-        <Route path="/logout" element={<Logout />}></Route>
+          {/* auth */}
+          <Route path="/login" element={<Login />}></Route>
+          <Route path="/logout" element={<Logout />}></Route>
+          <Route path="/signup" element={<Signup />}></Route>
 
-        {/* user */}
-        <Route path="/profile" element={<Profile />}></Route>
-        <Route path="/settings" element={<Settings />}></Route>
+          {/* general */}
+          <Route path="/about" element={<About />}></Route>
+          <Route path="/contact" element={<Contact />}></Route>
 
-        {/* words */}
-        <Route path="/viewdictionary" element={<ViewDictionary />}></Route>
-        <Route path="/worddetail" element={<WordDetail />}></Route>
-        <Route path="/addword" element={<AddWord />}></Route>
-        <Route path="/editword" element={<EditWord />}></Route>
-        <Route path="/reviewword" element={<ReviewWord />}></Route>
-        <Route path="/deleteword" element={<DeleteWord />}></Route>
-        <Route path="*" element={<h1>404 Not Found</h1>}></Route>
-      </Routes>
+          {/* Protected ie AuthNeeded */}
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          ></Route>
+
+          <Route
+            path="/search"
+            element={
+              <ProtectedRoute>
+                <Search />
+              </ProtectedRoute>
+            }
+          ></Route>
+          <Route
+            path="/searchpage"
+            element={
+              <ProtectedRoute>
+                <SearchPage />
+              </ProtectedRoute>
+            }
+          ></Route>
+
+          {/* user */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          ></Route>
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          ></Route>
+
+          {/* words */}
+          <Route
+            path="/viewdictionary"
+            element={
+              <ProtectedRoute>
+                <ViewDictionary />
+              </ProtectedRoute>
+            }
+          ></Route>
+          <Route
+            path="/worddetail"
+            element={
+              <ProtectedRoute>
+                <WordDetail />
+              </ProtectedRoute>
+            }
+          ></Route>
+          <Route
+            path="/addword"
+            element={
+              <ProtectedRoute>
+                <AddWord />
+              </ProtectedRoute>
+            }
+          ></Route>
+          <Route
+            path="/editword"
+            element={
+              <ProtectedRoute>
+                <EditWord />
+              </ProtectedRoute>
+            }
+          ></Route>
+          <Route
+            path="/reviewword"
+            element={
+              <ProtectedRoute>
+                <ReviewWord />
+              </ProtectedRoute>
+            }
+          ></Route>
+          <Route
+            path="/deleteword"
+            element={
+              <ProtectedRoute>
+                <DeleteWord />
+              </ProtectedRoute>
+            }
+          ></Route>
+          {/* The 404 page */}
+          <Route path="*" element={<h1>404 Not Found</h1>}></Route>
+        </Routes>
+      </UserAuthContextProvider>
     </div>
   );
 };
