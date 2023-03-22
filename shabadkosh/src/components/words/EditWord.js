@@ -1,8 +1,13 @@
 import React, { Component } from "react";
+import { Card } from "react-bootstrap";
 
 export class EditWord extends Component {
   render() {
-    return <div>EditWord</div>;
+    return <Card>
+    <Card.Body>
+      <Card.Title>[Placeholder] Edit Word</Card.Title>
+    </Card.Body>
+  </Card>;
   }
 }
 

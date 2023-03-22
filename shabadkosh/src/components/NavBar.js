@@ -13,7 +13,6 @@ import Logout from "./auth/Logout";
 import About from "./About";
 import Contact from "./Contact";
 import Search from "./Search";
-import SearchPage from "./SearchPage";
 import ReviewWord from "./words/ReviewWord";
 import DeleteWord from "./words/DeleteWord";
 
@@ -53,17 +52,14 @@ const NavBar = () => {
                 </NavDropdown.Item>
               </NavDropdown>
               <Nav.Link href="/search">Search</Nav.Link>
-              <Nav.Link href="/searchpage">SearchPage</Nav.Link>
-
+              <Nav.Link href="/about">About</Nav.Link>
+              <Nav.Link href="/contact">Contact</Nav.Link>
               <NavDropdown title="Profile" id="basic-nav-dropdown-1">
                 <NavDropdown.Item href="/profile">Profile</NavDropdown.Item>
                 <NavDropdown.Item href="/settings">Settings</NavDropdown.Item>
                 <NavDropdown.Item href="/login">Login</NavDropdown.Item>
                 <NavDropdown.Divider />
                 <NavDropdown.Item href="/logout">Logout</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <Nav.Link href="/about">About</Nav.Link>
-                <Nav.Link href="/contact">Contact</Nav.Link>
               </NavDropdown>
             </Nav>
           </Navbar.Collapse>
@@ -97,14 +93,6 @@ const NavBar = () => {
             element={
               <ProtectedRoute>
                 <Search />
-              </ProtectedRoute>
-            }
-          ></Route>
-          <Route
-            path="/searchpage"
-            element={
-              <ProtectedRoute>
-                <SearchPage />
               </ProtectedRoute>
             }
           ></Route>

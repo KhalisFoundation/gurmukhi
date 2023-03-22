@@ -1,8 +1,12 @@
 import React, { Component } from "react";
-
+import { Card } from "react-bootstrap";
 export class ViewDictionary extends Component {
   render() {
-    return <div>ViewDictionary</div>;
+    return <Card>
+    <Card.Body>
+      <Card.Title>[Placeholder] View Dictionary</Card.Title>
+    </Card.Body>
+  </Card>;
   }
 }
 

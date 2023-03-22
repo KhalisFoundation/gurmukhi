@@ -83,10 +83,15 @@ yarn prettier --write .
 eslint src
 ```
 
-# firbase
+# firebase
 
 ```
 firebase login
 firebase init
+
+```
+## To deploy
+```
+yarn build
 firebase deploy
 ```

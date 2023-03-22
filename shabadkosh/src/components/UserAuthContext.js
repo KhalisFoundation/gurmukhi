@@ -7,7 +7,6 @@ import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
 } from "firebase/auth";
-import { PropTypes } from "prop-types";
 
 const userAuthContext = createContext();
 
