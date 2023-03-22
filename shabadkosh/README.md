@@ -95,3 +95,8 @@ firebase init
 yarn build
 firebase deploy
 ```
+
+## yaml linting
+```
+yamllint <filename>
+```

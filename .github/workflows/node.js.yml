@@ -20,13 +20,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - working-directory: ./shabadkosh
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - run: yarn install --frozen-lockfile
-    - run: yarn run build --if-present
-    - run: yarn test
+    - run: |
+        cd ./shabadkosh 
+        yarn install --frozen-lockfile
+        yarn run build --if-present
+        yarn test
 
