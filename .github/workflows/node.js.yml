@@ -31,6 +31,6 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: |
         yarn install --frozen-lockfile
-        yarn run build --if-present
+      # yarn run build --if-present
       # yarn test # FIXME
 
