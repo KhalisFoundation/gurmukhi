@@ -36,6 +36,8 @@ jobs:
       # yarn test # FIXME
 
     - name: ESlint Runner Action
-      uses: tinovyatkin/action-eslint@v1
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        yarn run lint
+      # uses: tinovyatkin/action-eslint@v1
+      # with:
+      #   repo-token: ${{ secrets.GITHUB_TOKEN }}
