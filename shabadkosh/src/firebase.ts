@@ -1,54 +1,36 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAnalytics } from 'firebase/analytics';
-import { 
+import {
   getAuth,
   onAuthStateChanged,
   signOut,
-  signInWithEmailAndPassword,
   NextOrObserver,
   User,
   sendPasswordResetEmail,
-  confirmPasswordReset
 } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_apiKey,
-  authDomain: process.env.REACT_APP_authDomain,
-  projectId: process.env.REACT_APP_projectId,
-  storageBucket: process.env.REACT_APP_storageBucket,
-  messagingSenderId: process.env.REACT_APP_messagingSenderId,
-  appId: process.env.REACT_APP_appId,
-  measurementId: process.env.REACT_APP_measurementId,
+  apiKey: process.env.REACT_APP_API_KEY,
+  authDomain: process.env.REACT_APP_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_APP_ID,
+  measurementId: process.env.REACT_APP_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const signInUser = async (
-  email: string, 
-  password: string
-) => {
-  if (!email && !password) return;
 
-  return await signInWithEmailAndPassword(auth, email, password)
-}
+export const userStateListener = (
+  callback:NextOrObserver<User>,
+) => onAuthStateChanged(auth, callback);
 
-export const userStateListener = (callback:NextOrObserver<User>) => {
-  return onAuthStateChanged(auth, callback)
-}
+export const SignOutUser = async () => signOut(auth);
 
-export const SignOutUser = async () => await signOut(auth);
-
-export const passwordReset = async (email: string) => {
-  return await sendPasswordResetEmail(auth, email)
-}
-
-export const confirmResetPassword = async (oobCode: string, newPassword: string) => {
-  if (!oobCode && !newPassword) return;
-
-  return await confirmPasswordReset(auth, oobCode, newPassword)
-}
+export const passwordReset = async (email: string) => sendPasswordResetEmail(auth, email);
 
 export const firestore = getFirestore(app);
 export const analytics = getAnalytics(app);

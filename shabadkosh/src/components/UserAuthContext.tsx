@@ -1,8 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react/jsx-no-constructed-context-values */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
-import { createContext, useContext, useState, useEffect } from 'react';
-import { auth, firestore } from '../firebase';
+/* eslint-disable consistent-return */
+import React, {
+  ReactElement,
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from 'react';
 import {
   signOut,
   signInWithEmailAndPassword,
@@ -12,126 +18,107 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
 } from 'firebase/auth';
-import { checkUser, getUser } from './util/users';
-import { Timestamp, doc, setDoc } from 'firebase/firestore';
+import {
+  Timestamp, doc, setDoc,
+} from 'firebase/firestore';
+import { auth, firestore } from '../firebase';
+import { getUser } from './util';
+import checkUser from './util/checkUser';
+import roles from './constants/roles';
+import errors from './constants/error';
 
-const userAuthContext  = createContext<any>(null);
+const userAuthContext = createContext<any>(null);
 
-export function UserAuthContextProvider({ children }: { children:JSX.Element }) {
+export function UserAuthContextProvider({ children }: { children:ReactElement }) {
   const [user, setUser] = useState({});
 
-  function logIn(email: string, password: string) {
-    return signInWithEmailAndPassword(auth, email, password);
-  }
+  const logIn = (
+    email: string,
+    password: string,
+  ) => signInWithEmailAndPassword(auth, email, password);
 
-  async function signInWithGoogle() {
+  const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider).then((userCredential) => {
-      const {uid, email, displayName} = userCredential.user
-      return checkUser(uid, email ?? '').then((found) => {
-        if (!found) {
-          const getUser = doc(firestore, `users/${uid}`)
-          setDoc(getUser, {
-            role: 'creator',
-            email,
-            displayName: displayName ?? email?.split('@')[0],
-            created_at: Timestamp.now(),
-            created_by: 'self',
-            updated_at: Timestamp.now(),
-            updated_by: 'self',
-          }).then(() => {
-            console.log('New User added to firestore');
-            return true
-          });
-        } else {
-          console.log('Valid user');
-          return true
-        }
-        setUser(userCredential.user)
-      })
-    })
-    .catch((error) => {
-      if (error.code == 'auth/email-already-in-use') {
-        alert('The email address is already in use');
-      } else if (error.code == 'auth/invalid-email') {
-        alert('The email address is not valid.');
-      } else if (error.code == 'auth/operation-not-allowed') {
-        alert('Operation not allowed.');
-      } else if (error.code == 'auth/weak-password') {
-        alert('The password is too weak.');
-      }
-      console.log(error);
-      return false;
-    });
-  }
-
-  async function signUp(name: string, role: string, email: string, password: string) {
-    return createUserWithEmailAndPassword(auth, email, password)
-      .then(async (userCredential) => {
-        // Signed in
-        const user = userCredential.user;
-        const { uid, email, displayName } = user;
-        const getUser = doc(firestore, `users/${uid}`);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        await setDoc(getUser, {
-          name,
-          role,
-          email,
-          displayName: displayName ?? name,
-          created_at: Timestamp.now(),
-          created_by: 'self',
-          updated_at: Timestamp.now(),
-          updated_by: 'self'
-        }).then(() => {
-          console.log('New User added to firestore');
+    return signInWithPopup(auth, provider)
+      .then((userCredential) => {
+        const { uid, email, displayName } = userCredential.user;
+        return checkUser(uid, email ?? '').then((found) => {
+          if (!found) {
+            const localUser = doc(firestore, `users/${uid}`);
+            setDoc(localUser, {
+              role: roles.creator,
+              email,
+              displayName: displayName ?? email?.split('@')[0],
+              created_at: Timestamp.now(),
+              created_by: 'self',
+              updated_at: Timestamp.now(),
+              updated_by: 'self',
+            }).then(() => true);
+          } else {
+            return true;
+          }
+          setUser(userCredential.user);
         });
-        setUser(user);
-        
-        sendEmailVerification(auth.currentUser ?? user)
-          .then(() => {
-            // const userCredentialUser = {...user};
-            // Alert Email verification sent!
-            alert('Email verification sent!');
-          });
-        return true;
-      })
-      .catch((error) => {
-        if (error.code == 'auth/email-already-in-use') {
-          alert('The email address is already in use');
-        } else if (error.code == 'auth/invalid-email') {
-          alert('The email address is not valid.');
-        } else if (error.code == 'auth/operation-not-allowed') {
-          alert('Operation not allowed.');
-        } else if (error.code == 'auth/weak-password') {
-          alert('The password is too weak.');
+      }).catch((error: any) => {
+        if (Object.keys(errors).includes(error.code)) {
+          alert(errors[error.code]);
         }
-        console.log(error);
         return false;
       });
-  }
+  };
 
-  function logOut() {
-    return signOut(auth);
-  }
+  const signUp = async (
+    name: string,
+    role: string,
+    email: string,
+    password: string,
+  ) => createUserWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      const userData = userCredential.user;
+      const { uid, displayName } = userData;
+      const localUser = doc(firestore, `users/${uid}`);
+      setDoc(localUser, {
+        name,
+        role,
+        email,
+        displayName: displayName ?? name,
+        created_at: Timestamp.now(),
+        created_by: 'self',
+        updated_at: Timestamp.now(),
+        updated_by: 'self',
+      });
+      setUser(userData);
+
+      sendEmailVerification(auth.currentUser ?? userData).then(() => {
+        alert('Email verification sent!');
+      });
+      return true;
+    })
+    .catch((error: any) => {
+      if (Object.keys(errors).includes(error.code)) {
+        alert(errors[error.code]);
+      }
+      return false;
+    });
+
+  const logOut = () => signOut(auth);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentuser: any) => {
       if (currentuser !== null) {
         const { uid, email } = currentuser;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const userData = getUser(email ?? '', uid)
-          .then((data) => 
-            {
-              const usr = {
-                user,
-                uid,
-                email: data?.email,
-                displayName: data?.displayName,
-                photoURL: '',
-                role: data?.role,
-              };
-              setUser(usr);
-          })
+        getUser(email ?? '', uid)
+          .then((data) => {
+            const usr = {
+              user,
+              uid,
+              email: data?.email,
+              displayName: data?.displayName,
+              photoURL: '',
+              role: data?.role,
+            };
+            setUser(usr);
+          });
       }
       setUser(currentuser);
     });
@@ -142,12 +129,13 @@ export function UserAuthContextProvider({ children }: { children:JSX.Element }) 
   }, []);
 
   return (
-    <userAuthContext.Provider value={{ user, logIn, signUp, logOut, signInWithGoogle }}>
+    <userAuthContext.Provider value={{
+      user, logIn, signUp, logOut, signInWithGoogle,
+    }}
+    >
       {children}
     </userAuthContext.Provider>
   );
 }
 
-export function useUserAuth() {
-  return useContext(userAuthContext);
-}
+export const useUserAuth = () => useContext(userAuthContext);

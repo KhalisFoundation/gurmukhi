@@ -1,37 +1,40 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Form, Alert, Card } from 'react-bootstrap';
-import { Button } from 'react-bootstrap';
-import { useUserAuth } from '../UserAuthContext';
-import { checkUser } from '../util/users';
+import {
+  Form, Alert, Card, Button,
+} from 'react-bootstrap';
 import { UserCredential } from 'firebase/auth';
 import GoogleButton from 'react-google-button';
+import { Trans, useTranslation } from 'react-i18next';
+import { useUserAuth } from '../UserAuthContext';
+import checkUser from '../util/checkUser';
+import routes from '../constants/routes';
 
-const Login = () => {
+function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { logIn, signInWithGoogle } = useUserAuth();
+  const { logIn, signInWithGoogle, logOut } = useUserAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setError('');
     try {
       await logIn(email, password).then((data: UserCredential) => {
-        const {uid, email} = data.user
+        const { uid } = data.user;
         if (email) {
           checkUser(uid, email).then((found) => {
             if (!found) {
-              throw new Error('Invalid user');
-            } else {
-              console.log('Valid user');
+              logOut();
+              setError('Invalid user');
             }
-          })
+          });
         }
-      })
-      navigate('/home');
+      });
+      navigate(routes.words);
     } catch (err: any) {
       setError(err.message);
     }
@@ -43,18 +46,18 @@ const Login = () => {
       // left with getting confirmation of logging to navigate to homepage
       await signInWithGoogle().then((success: any) => {
         if (success) {
-          navigate('/home')
+          navigate(routes.words);
         }
-      })
-    } catch (error: any) {
-      console.log(error.message);
+      });
+    } catch (err: any) {
+      console.log(err.message);
     }
   };
 
   return (
     <div className="container">
       <div className="p-4 box d-flex flex-column align-items-center">
-        <h2 className="mb-3">Shabadkosh Login</h2>
+        <h2 className="mb-3">{t('KOSH_LOGIN')}</h2>
         {error && <Alert variant="danger">{error}</Alert>}
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="formBasicEmail">
@@ -75,11 +78,11 @@ const Login = () => {
 
           <div className="d-grid gap-2">
             <Button variant="primary" type="submit">
-              Log In
+              {t('LOGIN')}
             </Button>
           </div>
         </Form>
-        <hr style={{width: '100%'}}/>
+        <hr className="w-100" />
         <div>
           <GoogleButton
             className="g-btn"
@@ -87,17 +90,18 @@ const Login = () => {
             onClick={handleGoogleSignIn}
           />
         </div>
-        <Card className="p-4 box mt-3 text-center" style={{width: '50%'}}>
-          Contact the admin to get reviewer/admin access.<br/>
-          Do not have an account?
-          <a href="/signup">Sign up</a>
+        <Card
+          className="p-4 box mt-3 text-center w-50"
+        >
+          <Trans components={{ newline: <br /> }}>contactAdmin</Trans>
+          <a href={routes.signup}>{t('SIGNUP')}</a>
 
           <br />
-          <Link to="/forgot-password">Forgot password!</Link>
+          <Link to="/forgot-password">{t('FORGOT_PASSWORD')}</Link>
         </Card>
       </div>
     </div>
   );
-};
+}
 
 export default Login;

@@ -1,4 +1,4 @@
 export interface TimestampType {
-    seconds: number,
-    nanoseconds: number,
+  seconds: number,
+  nanoseconds: number,
 }

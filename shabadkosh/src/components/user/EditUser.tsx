@@ -1,14 +1,20 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Alert, Card } from 'react-bootstrap';
-import { Button } from 'react-bootstrap';
-import { useUserAuth } from '../UserAuthContext';
-import { Timestamp, doc, getDoc } from 'firebase/firestore';
+import {
+  Form, Alert, Card, Button,
+} from 'react-bootstrap';
+import {
+  Timestamp, doc, getDoc,
+} from 'firebase/firestore';
+import { useTranslation } from 'react-i18next';
 import { auth, firestore } from '../../firebase';
-import { updateUser } from '../util/users';
+import roles from '../constants/roles';
+import routes from '../constants/routes';
+import { useUserAuth } from '../UserAuthContext';
+import { updateUser, capitalize } from '../util';
 
-const EditUser = () => {
+function EditUser() {
   const { uid } = useParams();
   const getUser = doc(firestore, `users/${uid}`);
 
@@ -22,6 +28,17 @@ const EditUser = () => {
   const [error, setError] = useState('');
   const { user } = useUserAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const fillFormValues = (word: any) => {
+    const formVal = {
+    } as any;
+    Object.keys(word).forEach((key) => {
+      formVal[key] = word[key];
+      (document.getElementById(key) as HTMLInputElement)?.setAttribute('value', word[key]);
+    });
+    setFormValues(formVal);
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -47,38 +64,14 @@ const EditUser = () => {
     fetchUser();
   }, []);
 
-  const roles = {
-    'creator': 'Creator',
-    'reviewer': 'Reviewer',
-    'admin': 'Admin'
-  }
-
   const handleChange = (e: any) => {
-    setFormValues({ ...formValues, [e.target.id]: e.target.value });
-  }
-
-  const fillFormValues = (word: any) => {
-    const formVal = {} as any;
-    Object.keys(word).map((key) => {
-      formVal[key] = word[key];
-      (document.getElementById(key) as HTMLInputElement)?.setAttribute('value',word[key]);
+    setFormValues({
+      ...formValues, [e.target.id]: e.target.value,
     });
-    setFormValues(formVal);
-  }
+  };
 
-  const handleSubmit = async (e : any) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setError('');
-
-    const form = e.currentTarget;
-    if (form.checkValidity() === false) {
-      setValidated(true);
-      return;
-    }
-
-    // console.log('Form data: ', formValues);
-    editUser(formValues);
+  const resetState = () => {
+    setValidated(false);
   };
 
   const editUser = (formData: any) => {
@@ -93,33 +86,40 @@ const EditUser = () => {
         created_at: formValues.created_at ?? localUser.created_at,
         created_by: formValues.created_by ?? localUser.created_by,
         updated_at: Timestamp.now(),
-        updated_by: auth.currentUser?.email
-      }
-    ).then(() => {
-      console.log('Updated user!');
-    }).finally(() => {
+        updated_by: auth.currentUser?.email,
+      },
+    ).finally(() => {
       setIsLoading(false);
-    })
+    });
 
     resetState();
     setSubmitted(true);
-  }
+  };
 
-  const resetState = () => {
-    setValidated(false);
-  }
+  const handleSubmit = async (e : any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setError('');
 
-  if (isLoading) return <h2>Loading...</h2>
-  if (!found) return <h2>User not found!</h2>
-  if (user?.role != 'admin') return <h2>Sorry, you are not authorized to view this page.</h2>;
+    const form = e.currentTarget;
+    if (form.checkValidity() === false) {
+      setValidated(true);
+      return;
+    }
+    editUser(formValues);
+  };
+
+  if (isLoading) return <h2>{t('LOADING')}</h2>;
+  if (!found) return <h2>{t('USER_NOT_FOUND')}</h2>;
+  if (user?.role !== roles.admin) return <h2>Sorry, you are not authorized to view this page.</h2>;
   return (
-    <div className='container'>
+    <div className="container">
       <div className="p-4 box">
-        <h2 className="mb-3">Update User</h2>
+        <h2 className="mb-3">{t('UPDATE_USER')}</h2>
         {error && <Alert variant="danger">{error}</Alert>}
         <Form className="rounded p-4 p-sm-3" hidden={submitted} noValidate validated={validated} onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="name">
-            <Form.Label>Name</Form.Label>
+            <Form.Label>{t('NAME')}</Form.Label>
             <Form.Control
               type="name"
               placeholder="Name"
@@ -129,43 +129,45 @@ const EditUser = () => {
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="role" onChange={handleChange}>
-            <Form.Label>Role</Form.Label>
+            <Form.Label>{t('ROLE')}</Form.Label>
             <Form.Select aria-label="Default select example" defaultValue={localUser.role}>
               {Object.entries(roles).map((ele) => {
                 const [key, value] = ele;
                 return (
-                  <option key={key} value={key}>{value}</option>
+                  <option key={key} value={key}>{capitalize(value)}</option>
                 );
               })}
             </Form.Select>
           </Form.Group>
-          
+
           <Form.Group className="mb-3" controlId="email">
-            <Form.Label>Email</Form.Label>
+            <Form.Label>{t('EMAIL')}</Form.Label>
             <Form.Control
               type="email"
               placeholder="Email address"
               onChange={handleChange}
               defaultValue={localUser.email}
-              disabled={true}
+              disabled
             />
           </Form.Group>
 
           <div className="d-grid gap-2">
             <Button variant="primary" type="submit">
-              Submit
+              {t('SUBMIT')}
             </Button>
           </div>
         </Form>
-        {submitted ? <Card className='background mt-4'>
-        <Card.Body className='rounded p-4 p-sm-3'>
-          <h3>Successfully updated the user!</h3>
-          <Button variant='primary' onClick={() => navigate('/users')}>Back to Users</Button>
-        </Card.Body>
-      </Card> : null}
+        {submitted ? (
+          <Card className="background mt-4">
+            <Card.Body className="rounded p-4 p-sm-3">
+              <h3>{t('userSuccessUpdate')}</h3>
+              <Button variant="primary" onClick={() => navigate(routes.users)}>{t('BACK_TO', { page: t('USERS') })}</Button>
+            </Card.Body>
+          </Card>
+        ) : null}
       </div>
     </div>
   );
-};
+}
 
 export default EditUser;

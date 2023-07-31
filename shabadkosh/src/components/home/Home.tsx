@@ -1,16 +1,19 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { Button, Card } from 'react-bootstrap';
-import { useNavigate } from 'react-router';
-import { useUserAuth } from './UserAuthContext';
+import { useNavigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
+import { useUserAuth } from '../UserAuthContext';
+import routes from '../constants/routes';
 
-const Home = () => {
+function Home() {
   const { logOut, user } = useUserAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const handleLogout = async () => {
     try {
       await logOut();
-      navigate('/');
+      navigate(routes.login);
     } catch (error: any) {
       console.log(error.message);
     }
@@ -21,19 +24,24 @@ const Home = () => {
       <Card>
         <Card.Body className="m-2 p-2">
           <div className="p-4 box mt-3 text-center">
-            Waheguru ji ka Khalsa, Waheguru ji ki Fateh {user?.displayName ?? ''} ji<br />
-            Use the navigation bar to navigate through this app!<br /><br />
-            It&apos;s a nice day for Gurmukhi ! <br />
+            <Trans components={{
+              newline: <br />,
+            }}
+            >
+              {t('HOME_DATA', {
+                user_name: user.displayName,
+              })}
+            </Trans>
           </div>
           <div className="d-grid gap-2 col-6 mx-auto">
             <Button variant="primary" onClick={handleLogout}>
-              Log out
+              {t('LOGOUT')}
             </Button>
           </div>
-      </Card.Body>
+        </Card.Body>
       </Card>
     </div>
   );
-};
+}
 
 export default Home;

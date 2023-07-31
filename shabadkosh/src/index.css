@@ -50,8 +50,6 @@ code {
   flex-direction: column;
   justify-content: space-between;
   align-self: center;
-  margin-left: 10%;
-  margin-right: 10%;
 }
 
 form {

@@ -1,34 +1,34 @@
 import { User } from 'firebase/auth';
-import { TimestampType } from './timestamp';
 import { ReactNode } from 'react';
+import { TimestampType } from './timestamp';
 
 export interface NewUserType {
-    id?: string,
-    displayName?: string,
-    email?: string,
-    role?: string,
-    created_at: TimestampType,
-    created_by: string,
-    updated_at: TimestampType,
-    updated_by: string,
+  id?: string,
+  displayName?: string,
+  email?: string,
+  role?: string,
+  created_at: TimestampType,
+  created_by: string,
+  updated_at: TimestampType,
+  updated_by: string,
 }
 
 export interface LocalUser {
-    user: User | null,
-    uid?: string,
-    email?: string,
-    displayName?: string,
-    photoURL?: string
-    role?: string,
-    username?: string
+  user: User | null,
+  uid?: string,
+  email?: string,
+  displayName?: string,
+  photoURL?: string
+  role?: string,
+  username?: string
 }
 
 export interface ChildrenProps {
-    children?: ReactNode
+  children?: ReactNode
 }
 
 export type UserState = {
-    auth: {
-      user: LocalUser
-    }
-}
+  auth: {
+    user: LocalUser
+  }
+};

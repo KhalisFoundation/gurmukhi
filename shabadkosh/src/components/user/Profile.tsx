@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Card } from 'react-bootstrap';
-import { useUserAuth } from '../UserAuthContext';
+import { useTranslation } from 'react-i18next';
 import { auth } from '../../firebase';
+import roles from '../constants/roles';
+import routes from '../constants/routes';
+import { useUserAuth } from '../UserAuthContext';
 
 function Profile() {
   const [authUser, setAuthUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { user } = useUserAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     setIsLoading(true);
@@ -17,21 +21,36 @@ function Profile() {
       } else {
         setAuthUser(null);
       }
-    })
+    });
   }, []);
 
-  const editUrl = `/users/edit/${user.uid}`;
+  const editUrl = routes.editUser.replace(':uid', user.uid);
 
-  if (isLoading) return <h2>Loading...</h2>;
+  if (isLoading) return <h2>{t('LOADING')}</h2>;
   return (
     <div className="container m-4">
       <Card>
         <Card.Body>
-          <Card.Title>Profile<Button href={editUrl} style={{backgroundColor: 'transparent', border: 'transparent'}} hidden={user?.role != 'admin'}>🖊️</Button></Card.Title>
+          <Card.Title>
+            {t('PROFILE')}
+            <Button
+              href={editUrl}
+              className="bg-transparent border-0"
+              hidden={user?.role !== roles.admin}
+            >
+              🖊️
+            </Button>
+          </Card.Title>
           <Card.Text>
-            <p>Name: {user?.displayName}</p>
-            <p>Role: {user?.role}</p>
-            <p>Email: {authUser?.email}</p>
+            <p>
+              {t('NAMED', { name: user?.displayName })}
+            </p>
+            <p>
+              {t('WITH_ROLE', { role: user?.role })}
+            </p>
+            <p>
+              {t('EMAILED', { email: authUser?.email })}
+            </p>
           </Card.Text>
         </Card.Body>
       </Card>

@@ -1,13 +1,40 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Container, Row, Badge, ListGroup, ButtonGroup, Form } from 'react-bootstrap';
-import { deleteQuestionByWordId, deleteSentenceByWordId, deleteWord, removeWordFromSupport, removeWordFromWordlists, wordsCollection } from '../util/controller';
-import { DocumentData, QuerySnapshot, doc, onSnapshot } from 'firebase/firestore';
+import {
+  Badge,
+  Button,
+  ButtonGroup,
+  Card,
+  Container,
+  Form,
+  ListGroup,
+  Row,
+} from 'react-bootstrap';
+import {
+  DocumentData, QuerySnapshot, doc, onSnapshot,
+} from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import {
+  deleteQuestionByWordId,
+  deleteSentenceByWordId,
+  deleteWord,
+  removeWordFromSupport,
+  removeWordFromWordlists,
+  wordsCollection,
+} from '../util/controller';
 import { NewWordType, Status } from '../../types/word';
 import { firestore } from '../../firebase';
 import { useUserAuth } from '../UserAuthContext';
-import { astatus, cstatus, rstatus } from '../constants';
-import { useNavigate } from 'react-router-dom';
+import {
+  astatus,
+  cstatus,
+  rstatus,
+} from '../constants';
+import { capitalize, compareUpdatedAt } from '../util/utils';
+import regex from '../constants/regex';
+import roles from '../constants/roles';
+import routes from '../constants/routes';
 
 function ViewDictionary() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -17,50 +44,72 @@ function ViewDictionary() {
   const [listView, setListView] = useState<boolean>(false);
   const [words, setWords] = useState<NewWordType[]>([]);
   const [filteredWords, setFilteredWords] = useState<NewWordType[]>([]);
-  const {user} = useUserAuth();
+  const { user } = useUserAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
-  let statusList = {} as Status;
-  if (user.role === 'admin') {
-    statusList = astatus
-  } else if (user.role === 'reviewer') {
-    statusList = rstatus
-  } else if (user.role === 'creator') {
-    statusList = cstatus
+  let statusList = {
+  } as Status;
+  if (user.role === roles.admin) {
+    statusList = astatus;
+  } else if (user.role === roles.reviewer) {
+    statusList = rstatus;
+  } else if (user.role === roles.creator) {
+    statusList = cstatus;
   }
+
+  const sortWords = (unwords: NewWordType[]) => {
+    const sortedWords = unwords.sort(
+      (p1, p2) => compareUpdatedAt(p1, p2),
+    );
+    return sortedWords;
+  };
+
+  const handleFilter = (filterVal = filter, statusVal = status, filterList = words) => {
+    let filteredList = filterList;
+    if (filterVal === 'created_by_me') {
+      filteredList = filteredList.filter((val) => val.created_by === user.email);
+    } else if (filterVal === 'am_working_on') {
+      filteredList = filteredList.filter((val) => (val.created_by === user.email || val.updated_by === user.email) && val.status?.includes('ing'));
+    } else if (filterVal === 'updated_by_me') {
+      filteredList = filteredList.filter((val) => val.updated_by === user.email);
+    } else if (filterVal === 'syn_or_ant') {
+      filteredList = filteredList.filter((val) => val.is_for_support);
+    }
+
+    if (statusVal !== 'all') {
+      filteredList = filteredList.filter((val) => val.status?.includes(statusVal));
+    }
+
+    setFilteredWords(sortWords(filteredList));
+  };
 
   const handleSearch = async (event: any) => {
     event.preventDefault();
-    console.log('query', query);
   };
 
   useEffect(() => {
     let localWords = words;
-    if (query.match('[\u0A00-\u0A76,.]+')) {
+    if (query.match(regex.gurmukhiWordRegex)) {
       localWords = words.filter((word) => word.word?.includes(query));
-    } else if (query.match('[a-zA-Z ]+')) {
+    } else if (query.match(regex.englishSentenceRegex)) {
       localWords = words.filter((word) => word.translation?.toLowerCase().includes(query));
-    } else {
-      console.log(query);
     }
     handleFilter(filter, status, localWords);
-
   }, [query, filter, status]);
 
   useEffect(() => {
     setIsLoading(true);
     onSnapshot(wordsCollection, (snapshot:
-      QuerySnapshot<DocumentData>) => {
-      const data = snapshot.docs.map((doc) => {
-          return {
-            id: doc.id,
-            created_at: doc.data().created_at,
-            updated_at: doc.data().updated_at,
-            created_by: doc.data().created_by,
-            updated_by: doc.data().updated_by,
-            ...doc.data(),
-          };
-        });
+    QuerySnapshot<DocumentData>) => {
+      const data = snapshot.docs.map((wordDoc) => ({
+        id: wordDoc.id,
+        created_at: wordDoc.data().created_at,
+        updated_at: wordDoc.data().updated_at,
+        created_by: wordDoc.data().created_by,
+        updated_by: wordDoc.data().updated_by,
+        ...wordDoc.data(),
+      }));
       setWords(data);
       setFilteredWords(data);
     });
@@ -68,184 +117,197 @@ function ViewDictionary() {
     setIsLoading(false);
   }, []);
 
-  const sortWords = (unwords: NewWordType[]) => {
-    const sortedWords = unwords.sort(
-      (p1, p2) => (p1.updated_at < p2.updated_at) ? 1 : (p1.updated_at > p2.updated_at) ? -1 : 0);
-
-    // filter words by user role
-    // if (user?.role === 'creator') {
-    //   sortedWords = sortedWords.filter((word) => ['creating-english', 'creating-punjabi', 'creating', 'feedback-english', 'feedback-punjabi'].includes(word.status ?? ''));
-    // } else if (user?.role === 'reviewer') {
-    //   sortedWords = sortedWords.filter((word) => ['reviewing', 'created'].includes(word.status ?? ''));
-    // } else if (user?.role === 'admin') {
-    //   // no change, admin can view all
-    // } else {
-    //   sortedWords = sortedWords.filter((word) => ['...'].includes(word.status ?? ''));
-    // }
-    // console.log('Sorted words: ', sortedWords);
-    return sortedWords;
-  }
-
-  const delWord = (word: any) => {
+  const delWord = (deleted_word: any) => {
     // add code to remove word_id from its respective wordlist
-    const response = confirm(`Are you sure you want to delete this word: ${word.word}? \n This action is not reversible.`);
+    const response = window.confirm(`Are you sure you want to delete this word: ${deleted_word.word}? \n This action is not reversible.`);
     if (response) {
-      const getWord = doc(firestore, `words/${word.id}`);
-      removeWordFromSupport(word.id).then(() => {
-        removeWordFromWordlists(word.id).then(() => {
+      const getWord = doc(firestore, `words/${deleted_word.id}`);
+      removeWordFromSupport(deleted_word.id).then(() => {
+        removeWordFromWordlists(deleted_word.id).then(() => {
           deleteWord(getWord).then(() => {
-            deleteSentenceByWordId(word.id).then(() => {
-              deleteQuestionByWordId(word.id).then(() => {
-                alert('Word deleted!');
-                setIsLoading(false)
-                navigate('/words');
-              })
-            })
-          })
-        })
-      })
-    } else {
-      console.log('Operation abort!');
+            deleteSentenceByWordId(deleted_word.id).then(() => {
+              deleteQuestionByWordId(deleted_word.id).then(() => {
+                setIsLoading(false);
+                navigate(routes.words);
+              });
+            });
+          });
+        });
+      });
     }
-  }
+  };
 
-  const handleFilter = (filterVal = filter, statusVal = status, filterList = words) => {
-    if (filterVal === 'created_by_me') {
-      filterList = filterList.filter((val) => val.created_by === user.email)
-    } else if (filterVal === 'am_working_on') {
-      filterList = filterList.filter((val) => (val.created_by === user.email || val.updated_by === user.email) && val.status?.includes('ing'))
-    } else if (filterVal === 'updated_by_me') {
-      filterList = filterList.filter((val) => val.updated_by === user.email)
-    } else if (filterVal === 'syn_or_ant') {
-      filterList = filterList.filter((val) => val.is_for_support)
-    }
-
-    if (statusVal !== 'all') {
-      filterList = filterList.filter((val) => val.status?.includes(statusVal))
-    }
-
-    setFilteredWords(sortWords(filterList));
-  }
-
-  const wordsData = sortWords(filteredWords) && sortWords(filteredWords).length ? 
-    sortWords(filteredWords)?.map((word) => {
-      const detailUrl = `/words/${word.id}`;
-      const editUrl = `/words/edit/${word.id}`;
+  const wordsData = sortWords(filteredWords) && sortWords(filteredWords).length
+    ? sortWords(filteredWords)?.map((word) => {
+      const detailUrl = routes.word.replace(':wordid', word.id ?? '');
+      const editUrl = routes.editWord.replace(':wordid', word.id ?? '');
       if (listView) {
         return (
           <ListGroup.Item
             key={word.id}
-            className='d-flex justify-content-between align-items-center'
-            style={{width: '80%'}}
-            >
-            <div className='ms-2 me-auto'>
-              <h3 className='fw-bold'>{word.word}</h3>
+            className="d-flex justify-content-between"
+          >
+            <div className="ms-2 me-auto">
+              <h3 className="fw-bold">{word.word}</h3>
               <p>{word.translation}</p>
             </div>
-            <div className='d-flex flex-column align-items-end'>
+            <div className="d-flex flex-column align-items-end">
               <ButtonGroup>
-                <Button href={detailUrl} style={{backgroundColor: 'transparent', border: 'transparent'}}>👁️</Button>
-                {Object.keys(statusList).includes(word.status ?? 'creating-english') ? <Button href={editUrl} style={{backgroundColor: 'transparent', border: 'transparent'}}>🖊️</Button> : null }
-                {user?.role === 'admin' ? <Button onClick={() => delWord(word)} style={{backgroundColor: 'transparent', border: 'transparent'}}>🗑️</Button> : null}
+                <Button
+                  href={detailUrl}
+                  className="bg-transparent border-0"
+                >
+                  {t('EYE')}
+                </Button>
+                {Object.keys(statusList).includes(word.status ?? 'creating-english') ? (
+                  <Button
+                    href={editUrl}
+                    className="bg-transparent border-0"
+                  >
+                    {t('PEN')}
+                  </Button>
+                ) : null }
+                {user?.role === roles.admin ? (
+                  <Button
+                    onClick={() => delWord(word)}
+                    className="bg-transparent border-0"
+                  >
+                    {t('BIN')}
+                  </Button>
+                ) : null}
               </ButtonGroup>
-              <Badge pill bg='primary' text='white' className='mb-2' hidden={!word.status}>
+              <Badge pill bg="primary" text="white" className="mb-2" hidden={!word.status}>
                 {word.status}
               </Badge>
-              <Badge pill bg='primary' text='white' className='mb-2' hidden={!word.is_for_support}>
-                {'Synonym/Antonym'}
+              <Badge pill bg="primary" text="white" className="mb-2" hidden={!word.is_for_support}>
+                Synonym/Antonym
               </Badge>
             </div>
           </ListGroup.Item>
-        )
-      } else {
-        return  (
-          <Card className='p-2 wordCard' key={word.id} style={{ width: '20rem' }}>
-            {/* <Card.Img variant='top' src={word.images && word.images.length ? word.images[0] : require('../../assets/nothing.jpeg')} onError={onError} /> */}
-            <Card.Body className='d-flex flex-column justify-content-center'
-              style={{width: '100%'}}>
-              <div className='d-flex flex-row justify-content-between align-items-center'
-                style={{width: '100%'}}>
-                <Card.Title>{word.word}<br/>({word.translation})</Card.Title>
-                <div className='d-flex flex-column align-items-end'>
-                  <Badge pill bg='primary' text='white' hidden={!word.status} className='mb-2'>
-                    {word.status}
-                  </Badge>
-                  <Badge pill bg='primary' text='white' hidden={!word.is_for_support}>
-                    {'Synonym/Antonym'}
-                  </Badge>
-                </div>
-              </div>
-              <ButtonGroup>
-                <Button href={detailUrl} variant='success'>View</Button>
-                {Object.keys(statusList).includes(word.status ?? 'creating-english') ? <Button href={editUrl}>Edit</Button> : null }
-                {user?.role === 'admin' ? <Button onClick={() => delWord(word)} variant='danger' >Delete</Button> : null }
-              </ButtonGroup>
-            </Card.Body>
-          </Card>
         );
       }
+      return (
+        <Card
+          className="p-2 wordCard col-lg-3 col-md-5 col-sm-12"
+          key={word.id}
+        >
+          <Card.Body
+            className="d-flex flex-column justify-content-center w-100"
+          >
+            <div
+              className="d-flex flex-row justify-content-between align-items-center w-100"
+            >
+              <Card.Title>
+                {word.word}
+                <br />
+                (
+                {word.translation}
+                )
+              </Card.Title>
+              <div className="d-flex flex-column align-items-end">
+                <Badge pill bg="primary" text="white" hidden={!word.status} className="mb-2">
+                  {word.status}
+                </Badge>
+                <Badge pill bg="primary" text="white" hidden={!word.is_for_support}>
+                  {t('SYN_OR_ANT')}
+                </Badge>
+              </div>
+            </div>
+            <ButtonGroup>
+              <Button href={detailUrl} variant="success">{t('view')}</Button>
+              {Object.keys(statusList).includes(word.status ?? 'creating-english') ? <Button href={editUrl}>{t('EDIT')}</Button> : null }
+              {user?.role === roles.admin ? <Button onClick={() => delWord(word)} variant="danger">{t('DELETE')}</Button> : null }
+            </ButtonGroup>
+          </Card.Body>
+        </Card>
+      );
     })
-    : 
-    <Card><Card.Body><h3>No words {user?.role == 'reviewer' ? 'to review!' : 'found!'}</h3></Card.Body></Card>;
+    : (
+      <Card>
+        <Card.Body>
+          <h3>
+            No words
+            {user?.role === roles.reviewer ? 'to review!' : 'found!'}
+          </h3>
+        </Card.Body>
+      </Card>
+    );
 
-  if (words.length === 0 || isLoading) return <h2>Loading...</h2>;
+  if (words.length === 0 || isLoading) return <h2>{t('LOADING')}</h2>;
   return (
-    <div className='container mt-2'>
-      <div className='d-flex justify-content-between align-items-center'>
-        <h2>Words</h2>
-        <Button href='/words/new'>Add new</Button>
+    <div className="container mt-2">
+      <div className="d-flex justify-content-between align-items-center">
+        <h2>{t('WORDS')}</h2>
+        <Button href={routes.newWord}>{t('ADD_NEW', { what: '' })}</Button>
       </div>
-      <Button onClick={() => setListView(!listView)} className='button' variant='primary'>{listView ? 'Card View' : 'List View'}</Button>
-      <Form className='d-flex align-items-center' style={{width: '100%'}} onSubmit={handleSearch}>
-        <Form.Group controlId='formBasicSearch' style={{width: '70%'}}>
-          <Form.Label>Search</Form.Label>
+      <Button
+        className="button"
+        variant="primary"
+        onClick={() => setListView(!listView)}
+      >
+        {listView ? 'Card View' : 'List View'}
+      </Button>
+      <Form
+        className="d-flex align-items-center w-100"
+        onSubmit={handleSearch}
+      >
+        <Form.Group
+          controlId="formBasicSearch"
+          className="w-70"
+        >
+          <Form.Label>{t('SEARCH')}</Form.Label>
           <Form.Control
-            type='text'
-            placeholder='Enter search term'
+            type="text"
+            placeholder="Enter search term"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </Form.Group>
 
-        <div className='d-flex align-items-center'>
-          <Form.Group controlId='filter' onChange={(e: any) => setFilter(e.target.value ?? '')} defaultValue={filter}>
-            <Form.Label>Filter</Form.Label>
+        <div className="d-flex align-items-center">
+          <Form.Group controlId="filter" onChange={(e: any) => setFilter(e.target.value ?? '')} defaultValue={filter}>
+            <Form.Label>{t('FILTER')}</Form.Label>
             <Form.Select>
-              <option key={'all'} value={'all'}>Show All</option>
-              <option key={'cbyme'} value={'created_by_me'}>Created by me</option>
-              <option key={'amwon'} value={'am_working_on'}>I&apos;m working on</option>
-              <option key={'lupme'} value={'updated_by_me'}>Last updated by me</option>
-              <option key={'synant'} value={'syn_or_ant'}>Synonyms/Antonyms</option>
+              <option key="all" value="all">{t('SHOW_ALL')}</option>
+              <option key="cbyme" value="created_by_me">{t('CREATED_BY_ME')}</option>
+              <option key="amwon" value="am_working_on">{t('AM_WORKING_ON')}</option>
+              <option key="lupme" value="updated_by_me">{t('LAST_UPDATED_BY_ME')}</option>
+              <option key="synant" value="syn_or_ant">{t('SYN_OR_ANT')}</option>
             </Form.Select>
           </Form.Group>
 
-          <Form.Group controlId='status' onChange={(e: any) => setStatus(e.target.value ?? '')}>
-            <Form.Label>Status</Form.Label>
+          <Form.Group controlId="status" onChange={(e: any) => setStatus(e.target.value ?? '')}>
+            <Form.Label>{t('STATUS')}</Form.Label>
             <Form.Select defaultValue={status}>
-              <option key={'all'} value={'all'}>Show All</option>
+              <option key="all" value="all">{t('SHOW_ALL')}</option>
               {Object.keys(statusList).length > 0 && Object.keys(statusList).map((ele) => {
-                const val = statusList[ele]
+                const val = statusList[ele];
                 return (
-                  <option key={ele} value={ele}>{val.charAt(0).toUpperCase() + val.slice(1)}</option>
-                  );
+                  <option key={ele} value={ele}>{capitalize(val)}</option>
+                );
               })}
             </Form.Select>
           </Form.Group>
         </div>
 
       </Form>
-        {filteredWords && filteredWords.length ? (
-          <div className='d-flex ms-2 justify-content-evenly'>
-          <Container className='p-4'>
-            { listView ? <ListGroup className='d-flex align-items-center'>{wordsData}</ListGroup> : <Row className='d-flex justify-content-center align-items-center'>{wordsData}</Row>}
+      {filteredWords && filteredWords.length ? (
+        <div className="d-flex ms-2 justify-content-evenly">
+          <Container className="p-4">
+            { listView
+              ? <ListGroup className="d-flex">{wordsData}</ListGroup>
+              : (
+                <Row className="d-flex justify-content-center align-items-center">
+                  {wordsData}
+                </Row>
+              )}
           </Container>
         </div>
-        ) : (
-          <h2 className='no-words'>There are no words. Please add one.</h2>
-        )}
-  </div>
-);
+      ) : (
+        <h2 className="no-words">{t('NO_VALS', { vals: t('WORDS') })}</h2>
+      )}
+    </div>
+  );
 }
-
 
 export default ViewDictionary;
