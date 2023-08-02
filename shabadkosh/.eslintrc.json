@@ -49,6 +49,7 @@
       "version": "detect"
     }
   },
+  "ignorePatterns": ["webpack.config.js"],
   "overrides": [
     {
       "files": ["**/*.+(ts|tsx)"],
