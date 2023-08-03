@@ -23,14 +23,21 @@ jobs:
   
     steps:
     - uses: actions/checkout@v3
-    - name: ESlint Runner Action
-      uses: tinovyatkin/action-eslint@v1
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-    - run: |
+
+    - name: Install dependencies
+      run: |
         yarn install --frozen-lockfile
       # yarn run build --if-present
       # yarn test # FIXME
 
+    - name: ESlint Runner Action
+      run: |
+        yarn run lint
+      # uses: tinovyatkin/action-eslint@v1
+      # with:
+      #   repo-token: ${{ secrets.GITHUB_TOKEN }}
