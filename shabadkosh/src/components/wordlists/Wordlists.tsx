@@ -14,7 +14,7 @@ import { useUserAuth } from '../UserAuthContext';
 import { compareUpdatedAt } from '../util';
 import { deleteWordlist, wordlistsCollection } from '../util/controller';
 
-function Wordlists() {
+const Wordlists = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [wordlists, setWordlists] = useState<any>([]);
   const { user } = useUserAuth();
@@ -111,6 +111,6 @@ function Wordlists() {
       ) : <h2>{t('NO_VALS', { vals: t('WORDLISTS') })}</h2>}
     </div>
   );
-}
+};
 
 export default Wordlists;

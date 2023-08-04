@@ -14,7 +14,7 @@ import { useUserAuth } from '../UserAuthContext';
 import { NewUserType } from '../../types/user';
 import { compareUpdatedAt, deleteWord, usersCollection } from '../util';
 
-function Users() {
+const Users = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [users, setUsers] = useState<NewUserType[]>([]);
   const { user } = useUserAuth();
@@ -119,6 +119,6 @@ function Users() {
       )}
     </div>
   );
-}
+};
 
 export default Users;

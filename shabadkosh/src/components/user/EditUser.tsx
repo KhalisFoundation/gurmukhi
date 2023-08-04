@@ -14,7 +14,7 @@ import routes from '../constants/routes';
 import { useUserAuth } from '../UserAuthContext';
 import { updateUser, capitalize } from '../util';
 
-function EditUser() {
+const EditUser = () => {
   const { uid } = useParams();
   const getUser = doc(firestore, `users/${uid}`);
 
@@ -174,6 +174,6 @@ function EditUser() {
       </div>
     </div>
   );
-}
+};
 
 export default EditUser;

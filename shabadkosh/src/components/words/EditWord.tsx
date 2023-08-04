@@ -46,7 +46,7 @@ import roles from '../constants/roles';
 import routes from '../constants/routes';
 import PARTS_OF_SPEECH from '../constants/pos';
 
-function EditWord() {
+const EditWord = () => {
   const { wordid } = useParams();
   const { t } = useTranslation();
   const getWord = doc(firestore, `words/${wordid}`);
@@ -807,7 +807,7 @@ function EditWord() {
                 <br />
 
                 <Form.Label>{t('TRANSLATION')}</Form.Label>
-                <Form.Control id={`qtranslation${idx}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e)} pattern={regex.englishQuestionRegex} required />
+                <Form.Control id={`qtranslation${idx}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e)} pattern={regex.englishQuestionTranslationRegex} />
                 <Form.Control.Feedback type="invalid" itemID={`qtranslation${idx}`}>
                   {t('FEEDBACK_ENGLISH', { for: 'translation' })}
                 </Form.Control.Feedback>
@@ -910,6 +910,6 @@ function EditWord() {
       ) : null}
     </div>
   );
-}
+};
 
 export default EditWord;

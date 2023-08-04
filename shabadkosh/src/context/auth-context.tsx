@@ -15,7 +15,7 @@ export const AuthContext = createContext({
   signOut: () => {},
 });
 
-export function AuthProvider({ children }: ChildrenProps) {
+export const AuthProvider = ({ children }: ChildrenProps) => {
   const [currentUser, setCurrentUser] = useState<LocalUser | null>(null);
 
   useEffect(() => {
@@ -53,4 +53,4 @@ export function AuthProvider({ children }: ChildrenProps) {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+};

@@ -15,7 +15,7 @@ import routes from '../constants/routes';
 import { MiniWord } from '../../types/word';
 import { STATUS } from '../constants';
 
-function AddWordlist() {
+const AddWordlist = () => {
   const [formValues, setFormValues] = useState({
   } as any);
   const [validated, setValidated] = useState(false);
@@ -182,6 +182,6 @@ function AddWordlist() {
       ) : null}
     </div>
   );
-}
+};
 
 export default AddWordlist;

@@ -17,7 +17,7 @@ import {
 } from '../util';
 import { useUserAuth } from '../UserAuthContext';
 
-function ViewWordlist() {
+const ViewWordlist = () => {
   const { wlid } = useParams();
   const { user } = useUserAuth();
   const navigate = useNavigate();
@@ -185,6 +185,6 @@ function ViewWordlist() {
       </Card>
     </div>
   );
-}
+};
 
 export default ViewWordlist;

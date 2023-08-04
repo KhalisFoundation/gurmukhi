@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from 'react-bootstrap';
 import { Trans, useTranslation } from 'react-i18next';
 
-function About() {
+const About = () => {
   const { t } = useTranslation();
   return (
     <div className="d-flex flex-column justify-content-center align-items-center m-4">
@@ -21,6 +21,6 @@ function About() {
       </Card>
     </div>
   );
-}
+};
 
 export default About;

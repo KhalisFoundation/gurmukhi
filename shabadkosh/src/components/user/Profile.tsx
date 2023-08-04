@@ -6,7 +6,7 @@ import roles from '../constants/roles';
 import routes from '../constants/routes';
 import { useUserAuth } from '../UserAuthContext';
 
-function Profile() {
+const Profile = () => {
   const [authUser, setAuthUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { user } = useUserAuth();
@@ -58,6 +58,6 @@ function Profile() {
       </Card>
     </div>
   );
-}
+};
 
 export default Profile;

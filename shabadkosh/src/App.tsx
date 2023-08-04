@@ -4,7 +4,7 @@ import {
   Navigate, Route, Routes,
 } from 'react-router-dom';
 import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
+import { initReactI18next, useTranslation } from 'react-i18next';
 import NavBar from './components/navbar/NavBar';
 import { UserAuthContextProvider } from './components/UserAuthContext';
 import Login from './components/auth/Login';
@@ -45,9 +45,10 @@ i18n.use(initReactI18next).init({
   },
 });
 
-function App() {
+export const App = () => {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<h2>{t('LOADING')}</h2>}>
       <div className="App">
         <UserAuthContextProvider>
           <div>
@@ -191,6 +192,6 @@ function App() {
       </div>
     </Suspense>
   );
-}
+};
 
 export default App;

@@ -44,7 +44,7 @@ import { convertTimestampToDateString } from '../util/utils';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
 
-function WordDetail() {
+const WordDetail = () => {
   const { wordid } = useParams();
   const { user } = useUserAuth();
   const { t } = useTranslation();
@@ -431,7 +431,7 @@ function WordDetail() {
                   <h5>
                     {t('LABEL_VAL', {
                       label: t('TRANSLATION'),
-                      val: question.question,
+                      val: question.translation,
                     })}
                   </h5>
                   <h6>
@@ -513,6 +513,6 @@ function WordDetail() {
       <br />
     </Card>
   );
-}
+};
 
 export default WordDetail;

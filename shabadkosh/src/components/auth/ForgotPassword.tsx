@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { passwordReset } from '../../firebase';
 import errors from '../constants/error';
 
-function ForgotPassword() {
+const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [emailMessage, setEmailMessage] = useState(false);
   const { t } = useTranslation();
@@ -51,6 +51,6 @@ function ForgotPassword() {
       }
     </div>
   );
-}
+};
 
 export default ForgotPassword;

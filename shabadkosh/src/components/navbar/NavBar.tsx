@@ -8,7 +8,7 @@ import { useUserAuth } from '../UserAuthContext';
 import routes from '../constants/routes';
 import roles from '../constants/roles';
 
-function NavBar() {
+const NavBar = () => {
   const { user } = useUserAuth();
   const { t } = useTranslation();
 
@@ -51,6 +51,6 @@ function NavBar() {
       </Navbar>
     </div>
   );
-}
+};
 
 export default NavBar;

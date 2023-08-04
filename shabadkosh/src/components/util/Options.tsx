@@ -15,9 +15,9 @@ interface IProps {
   type : string;
 }
 
-function Options({
+const Options = ({
   id, name, word, setWord, words, placeholder, type,
-} : IProps) {
+} : IProps) => {
   const [showNewForm, setShowNewForm] = useState(false);
   const [option, setOption] = useState<string>('');
   const [translation, setTranslation] = useState<string>('');
@@ -141,6 +141,6 @@ function Options({
       </div>
     </div>
   );
-}
+};
 
 export default Options;

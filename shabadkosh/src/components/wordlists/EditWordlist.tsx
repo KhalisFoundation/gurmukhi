@@ -15,7 +15,7 @@ import routes from '../constants/routes';
 import { MiniWord } from '../../types/word';
 import { STATUS } from '../constants';
 
-function EditWordlist() {
+const EditWordlist = () => {
   const { wlid } = useParams();
   const getWordlist = doc(firestore, `wordlists/${wlid}`);
 
@@ -236,6 +236,6 @@ function EditWordlist() {
       ) : null}
     </div>
   );
-}
+};
 
 export default EditWordlist;

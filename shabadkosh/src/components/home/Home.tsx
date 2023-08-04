@@ -6,7 +6,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useUserAuth } from '../UserAuthContext';
 import routes from '../constants/routes';
 
-function Home() {
+const Home = () => {
   const { logOut, user } = useUserAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -42,6 +42,6 @@ function Home() {
       </Card>
     </div>
   );
-}
+};
 
 export default Home;

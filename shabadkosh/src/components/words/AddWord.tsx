@@ -38,9 +38,8 @@ import roles from '../constants/roles';
 import routes from '../constants/routes';
 import PARTS_OF_SPEECH from '../constants/pos';
 
-function AddWord() {
-  const [formValues, setFormValues] = useState({
-  } as any);
+const AddWord = () => {
+  const [formValues, setFormValues] = useState({} as any);
   const [sentences, setSentences] = useState<NewSentenceType[]>([]);
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [words, setWords] = useState<MiniWord[]>([]);
@@ -600,7 +599,7 @@ function AddWord() {
           {questions && questions.length ? questions.map((question, idx) => (
             <div
               key={idx}
-              className="d-flex flex-column justify-content-between align-items-center m-0"
+              className="d-flex flex-column justify-content-between m-0"
             >
               <div className="d-flex justify-content-between align-items-center">
                 <b>{t('QUESTION_WITH_NUM', { num: idx + 1 })}</b>
@@ -615,7 +614,7 @@ function AddWord() {
                 <br />
 
                 <Form.Label>{t('TRANSLATION')}</Form.Label>
-                <Form.Control id={`qtranslation${idx}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e)} pattern={regex.englishQuestionRegex} required />
+                <Form.Control id={`qtranslation${idx}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e)} pattern={regex.englishQuestionTranslationRegex}  />
                 <Form.Control.Feedback type="invalid" itemID={`qtranslation${idx}`}>
                   {t('FEEDBACK_ENGLISH', { for: 'translation' })}
                 </Form.Control.Feedback>
@@ -695,6 +694,6 @@ function AddWord() {
       ) : null}
     </div>
   );
-}
+};
 
 export default AddWord;

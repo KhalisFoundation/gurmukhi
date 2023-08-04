@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 
-function Contact() {
+const Contact = () => {
   const { t } = useTranslation();
   return (
     <div>
@@ -13,6 +13,6 @@ function Contact() {
       </Card>
     </div>
   );
-}
+};
 
 export default Contact;

@@ -11,7 +11,7 @@ import { useUserAuth } from '../UserAuthContext';
 import checkUser from '../util/checkUser';
 import routes from '../constants/routes';
 
-function Login() {
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -93,7 +93,7 @@ function Login() {
         <Card
           className="p-4 box mt-3 text-center w-50"
         >
-          <Trans components={{ newline: <br /> }}>contactAdmin</Trans>
+          <Trans components={{ newline: <br /> }}>CONTACT_ADMIN</Trans>
           <a href={routes.signup}>{t('SIGNUP')}</a>
 
           <br />
@@ -102,6 +102,6 @@ function Login() {
       </div>
     </div>
   );
-}
+};
 
 export default Login;

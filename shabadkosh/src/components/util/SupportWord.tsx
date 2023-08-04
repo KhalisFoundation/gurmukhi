@@ -18,9 +18,9 @@ interface IProps {
   placeholder: string;
 }
 
-function SupportWord({
+const SupportWord = ({
   id, name, word, setWord, words, type, placeholder,
-} : IProps) {
+} : IProps) => {
   const [showNewForm, setShowNewForm] = useState(false);
   const [supportWord, setSupportWord] = useState<string>('');
   const [translation, setTranslation] = useState<string>('');
@@ -141,6 +141,6 @@ function SupportWord({
       </div>
     </div>
   );
-}
+};
 
 export default SupportWord;

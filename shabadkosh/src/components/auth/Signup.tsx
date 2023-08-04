@@ -10,7 +10,7 @@ import routes from '../constants/routes';
 import { useUserAuth } from '../UserAuthContext';
 import { checkIfEmailUnique } from '../util';
 
-function Signup() {
+const Signup = () => {
   const [email, setEmail] = useState('');
   const [diplayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
@@ -99,6 +99,6 @@ function Signup() {
       </Form>
     </div>
   );
-}
+};
 
 export default Signup;

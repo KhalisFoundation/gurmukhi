@@ -104,7 +104,7 @@ export const convertTimestampToDate = (timestamp: TimestampType, t: any) => {
 
 export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
-export const splitAndCapitalize = (some: any) => some.split('-').map((ele: string) => capitalize(ele.trim()));
+export const splitAndCapitalize = (some: any) => some.split('-').map((ele: string) => capitalize(ele.trim())).join(' ');
 
 export const splitAndClear = (some: any) => {
   if (!some) {

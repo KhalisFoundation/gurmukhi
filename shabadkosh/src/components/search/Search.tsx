@@ -10,7 +10,7 @@ import routes from '../constants/routes';
 import { NewWordType } from '../../types/word';
 import { wordsCollection, convertTimestampToDateString } from '../util';
 
-function Search() {
+const Search = () => {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [words, setWords] = useState<NewWordType[]>([]);
@@ -118,6 +118,6 @@ function Search() {
 
     </div>
   );
-}
+};
 
 export default Search;

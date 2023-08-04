@@ -30,7 +30,7 @@ import errors from './constants/error';
 
 const userAuthContext = createContext<any>(null);
 
-export function UserAuthContextProvider({ children }: { children:ReactElement }) {
+export const UserAuthContextProvider = ({ children }: { children:ReactElement }) => {
   const [user, setUser] = useState({});
   const { t } = useTranslation();
 
@@ -138,6 +138,6 @@ export function UserAuthContextProvider({ children }: { children:ReactElement })
       {children}
     </userAuthContext.Provider>
   );
-}
+};
 
 export const useUserAuth = () => useContext(userAuthContext);

@@ -37,7 +37,7 @@ import regex from '../constants/regex';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
 
-function ViewDictionary() {
+const ViewDictionary = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('');
@@ -214,7 +214,7 @@ function ViewDictionary() {
               </div>
             </div>
             <ButtonGroup>
-              <Button href={detailUrl} variant="success">{t('view')}</Button>
+              <Button href={detailUrl} variant="success">{t('VIEW')}</Button>
               {statusList.includes(word.status ?? STATUS.CREATING_ENGLISH) ? <Button href={editUrl}>{t('EDIT')}</Button> : null }
               {user?.role === roles.admin ? <Button onClick={() => delWord(word)} variant="danger">{t('DELETE')}</Button> : null }
             </ButtonGroup>
@@ -255,7 +255,7 @@ function ViewDictionary() {
       >
         <Form.Group
           controlId="formBasicSearch"
-          className="w-70"
+          className="w-100"
         >
           <Form.Label>{t('SEARCH')}</Form.Label>
           <Form.Control
@@ -310,6 +310,6 @@ function ViewDictionary() {
       )}
     </div>
   );
-}
+};
 
 export default ViewDictionary;
