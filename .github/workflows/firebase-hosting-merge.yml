@@ -12,8 +12,10 @@ defaults:
     working-directory: ./shabadkosh
 
 jobs:
-  build_and_deploy:
+  DEV:
     runs-on: ubuntu-latest
+    environment: dev
+
     steps:
       - uses: actions/checkout@v3
       - run: |
@@ -25,4 +27,38 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GURMUKHI_DEV }}'
           channelId: live
-          projectId: gurmukhi-dev
+          projectId: '${{ secrets.REACT_APP_PROJECTID }}'
+
+  STAGING:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          # cd ./shabadkosh
+          yarn install --frozen-lockfile && yarn run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          entryPoint: ./shabadkosh
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GURMUKHI_DEV }}'
+          channelId: live
+          projectId: '${{ secrets.REACT_APP_PROJECTID }}'
+
+  PROD:
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          # cd ./shabadkosh
+          yarn install --frozen-lockfile && yarn run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          entryPoint: ./shabadkosh
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GURMUKHI_DEV }}'
+          channelId: live
+          projectId: '${{ secrets.REACT_APP_PROJECTID }}'
