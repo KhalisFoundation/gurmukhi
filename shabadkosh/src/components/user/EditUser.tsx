@@ -109,9 +109,15 @@ function EditUser() {
     editUser(formValues);
   };
 
-  if (isLoading) return <h2>{t('LOADING')}</h2>;
-  if (!found) return <h2>{t('USER_NOT_FOUND')}</h2>;
-  if (user?.role !== roles.admin) return <h2>Sorry, you are not authorized to view this page.</h2>;
+  if (isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
+  if (!found) {
+    return <h2>{t('USER_NOT_FOUND')}</h2>;
+  }
+  if (user?.role !== roles.admin) {
+    return <h2>{t('NO_ACCESS')}</h2>;
+  }
   return (
     <div className="container">
       <div className="p-4 box">

@@ -13,6 +13,7 @@ import { wordsCollection, updateWordlist } from '../util/controller';
 import { auth, firestore } from '../../firebase';
 import routes from '../constants/routes';
 import { MiniWord } from '../../types/word';
+import { STATUS } from '../constants';
 
 function EditWordlist() {
   const { wlid } = useParams();
@@ -153,8 +154,12 @@ function EditWordlist() {
 
   const navigate = useNavigate();
 
-  if (isLoading) return <div>{t('LOADING')}</div>;
-  if (!found) return <h2>{t('NOT_FOUND', { what: t('WORDLIST') })}</h2>;
+  if (isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
+  if (!found) {
+    return <h2>{t('NOT_FOUND', { what: t('WORDLIST') })}</h2>;
+  }
   return (
     <div className="d-flex flex-column justify-content-center align-items-center background container">
       <h2>{t('EDIT_TEXT', { for: t('WORDLIST') })}</h2>
@@ -194,7 +199,7 @@ function EditWordlist() {
         <Form.Group className="mb-3" controlId="status" onChange={handleChange}>
           <Form.Label>{t('STATUS')}</Form.Label>
           <Form.Select aria-label="Default select example" defaultValue={wordlist.status}>
-            {['active', 'inactive'].map((ele) => (
+            {[STATUS.ACTIVE, STATUS.INACTIVE].map((ele) => (
               <option key={ele} value={ele}>{ele}</option>
             ))}
           </Form.Select>

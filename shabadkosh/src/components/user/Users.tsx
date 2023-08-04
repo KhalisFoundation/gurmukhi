@@ -99,8 +99,12 @@ function Users() {
     );
   });
 
-  if (users.length === 0 || isLoading) return <h2>{t('LOADING')}</h2>;
-  if (user?.role !== roles.admin) return <h2>{t('NO_ACCESS')}</h2>;
+  if (users.length === 0 || isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
+  if (user?.role !== roles.admin) {
+    return <h2>{t('NO_ACCESS')}</h2>;
+  }
   return (
     <div className="container">
       <h2>{t('USERS')}</h2>

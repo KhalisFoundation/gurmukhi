@@ -38,7 +38,7 @@ import {
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, cstatus,
+  astatus, rstatus, cstatus, STATUS,
 } from '../constants';
 import { convertTimestampToDateString } from '../util/utils';
 import roles from '../constants/roles';
@@ -71,8 +71,7 @@ function WordDetail() {
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [wordlists, setWordlists] = useState<WordlistType[]>([]);
 
-  let statusList = {
-  } as object;
+  let statusList = [] as string[];
   if (user.role === roles.admin) {
     statusList = astatus;
   } else if (user.role === roles.reviewer) {
@@ -258,25 +257,25 @@ function WordDetail() {
     const response = window.confirm(`Are you sure you want to ${action} : ${word_in_review.word}?`);
     if (response) {
       const getRevWord = doc(firestore, `words/${word_in_review.id}`);
-      let status = 'review-english';
+      let status = STATUS.REVIEW_ENGLISH;
       if (word_in_review.status) {
         if (type === 'review') {
           if (Object.keys(cstatus).includes(word_in_review.status)) {
             if (word_in_review.status.includes('english')) {
-              status = 'review-english';
+              status = STATUS.REVIEW_ENGLISH;
             } else if (word_in_review.status.includes('punjabi')) {
-              status = 'review-final';
+              status = STATUS.REVIEW_FINAL;
             }
           }
         } else if (type === 'approve') {
-          if (word_in_review.status === 'review-english') {
-            status = 'creating-punjabi';
-          } else if (word_in_review.status === 'review-final') {
-            status = 'active';
+          if (word_in_review.status === STATUS.REVIEW_ENGLISH) {
+            status = STATUS.CREATING_PUNJABI;
+          } else if (word_in_review.status === STATUS.REVIEW_FINAL) {
+            status = STATUS.ACTIVE;
           }
         }
       } else {
-        status = 'review-english';
+        status = STATUS.REVIEW_ENGLISH;
       }
       reviewWord(getRevWord, word_in_review, status, user.email).then(() => {
         navigate(routes.words);
@@ -314,8 +313,12 @@ function WordDetail() {
     </span>
   ) : t('NO_TEXT', { for: t('SYNONYMS') }));
 
-  if (isLoading) return <h2>{t('LOADING')}</h2>;
-  if (!found) return <h2>{t('NOT_FOUND', { what: t('WORD') })}</h2>;
+  if (isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
+  if (!found) {
+    return <h2>{t('NOT_FOUND', { what: t('WORD') })}</h2>;
+  }
   return (
     <Card className="container p-5">
       <Breadcrumb>
@@ -333,9 +336,9 @@ function WordDetail() {
           </h3>
 
           <ButtonGroup className="d-flex align-self-end">
-            {((word.status && Object.keys(statusList).includes(word.status ?? 'creating-english')) || word.is_for_support) ? <Button href={editUrl}>{t('EDIT')}</Button> : null}
-            {(word.status && Object.keys(cstatus).includes(word.status)) ? <Button onClick={() => revWord(word, 'review')} variant="success">{t('SEND_TO_REVIEW')}</Button> : null}
-            {(word.status && [roles.reviewer, roles.admin].includes(user.role) && ['review-english', 'review-final'].includes(word.status)) ? <Button onClick={() => revWord(word, 'approve')} variant="success">{t('APPROVE')}</Button> : null}
+            {((word.status && statusList.includes(word.status ?? STATUS.CREATING_ENGLISH)) || word.is_for_support) ? <Button href={editUrl}>{t('EDIT')}</Button> : null}
+            {(word.status && Object.values(cstatus).includes(word.status)) ? <Button onClick={() => revWord(word, 'review')} variant="success">{t('SEND_TO_REVIEW')}</Button> : null}
+            {(word.status && [roles.reviewer, roles.admin].includes(user.role) && [STATUS.REVIEW_ENGLISH, STATUS.REVIEW_FINAL].includes(word.status)) ? <Button onClick={() => revWord(word, 'approve')} variant="success">{t('APPROVE')}</Button> : null}
             {user.role === roles.admin ? <Button onClick={() => delWord(word)} variant="danger">{t('DELETE')}</Button> : null}
           </ButtonGroup>
         </div>
@@ -488,7 +491,7 @@ function WordDetail() {
             <h6>
               {t('LABEL_VAL', {
                 label: t('UPDATED_BY'),
-                val: convertTimestampToDateString(word.created_at),
+                val: convertTimestampToDateString(word.created_at, t),
               })}
             </h6>
             <h6>
@@ -500,7 +503,7 @@ function WordDetail() {
             <h6>
               {t('LABEL_VAL', {
                 label: t('LAST_UPDATED_AT'),
-                val: convertTimestampToDateString(word.updated_at),
+                val: convertTimestampToDateString(word.updated_at, t),
               })}
             </h6>
           </div>

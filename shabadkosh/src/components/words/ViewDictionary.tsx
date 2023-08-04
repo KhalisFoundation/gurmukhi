@@ -23,15 +23,16 @@ import {
   removeWordFromWordlists,
   wordsCollection,
 } from '../util/controller';
-import { NewWordType, Status } from '../../types/word';
+import { NewWordType } from '../../types/word';
 import { firestore } from '../../firebase';
 import { useUserAuth } from '../UserAuthContext';
 import {
+  STATUS,
   astatus,
   cstatus,
   rstatus,
 } from '../constants';
-import { capitalize, compareUpdatedAt } from '../util/utils';
+import { compareUpdatedAt, splitAndCapitalize } from '../util/utils';
 import regex from '../constants/regex';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
@@ -48,8 +49,7 @@ function ViewDictionary() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  let statusList = {
-  } as Status;
+  let statusList = [] as string[];
   if (user.role === roles.admin) {
     statusList = astatus;
   } else if (user.role === roles.reviewer) {
@@ -159,7 +159,7 @@ function ViewDictionary() {
                 >
                   {t('EYE')}
                 </Button>
-                {Object.keys(statusList).includes(word.status ?? 'creating-english') ? (
+                {Object.keys(statusList).includes(word.status ?? STATUS.CREATING_ENGLISH) ? (
                   <Button
                     href={editUrl}
                     className="bg-transparent border-0"
@@ -215,7 +215,7 @@ function ViewDictionary() {
             </div>
             <ButtonGroup>
               <Button href={detailUrl} variant="success">{t('view')}</Button>
-              {Object.keys(statusList).includes(word.status ?? 'creating-english') ? <Button href={editUrl}>{t('EDIT')}</Button> : null }
+              {statusList.includes(word.status ?? STATUS.CREATING_ENGLISH) ? <Button href={editUrl}>{t('EDIT')}</Button> : null }
               {user?.role === roles.admin ? <Button onClick={() => delWord(word)} variant="danger">{t('DELETE')}</Button> : null }
             </ButtonGroup>
           </Card.Body>
@@ -233,7 +233,9 @@ function ViewDictionary() {
       </Card>
     );
 
-  if (words.length === 0 || isLoading) return <h2>{t('LOADING')}</h2>;
+  if (words.length === 0 || isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
   return (
     <div className="container mt-2">
       <div className="d-flex justify-content-between align-items-center">
@@ -280,10 +282,10 @@ function ViewDictionary() {
             <Form.Label>{t('STATUS')}</Form.Label>
             <Form.Select defaultValue={status}>
               <option key="all" value="all">{t('SHOW_ALL')}</option>
-              {Object.keys(statusList).length > 0 && Object.keys(statusList).map((ele) => {
-                const val = statusList[ele];
+              {statusList.length > 0 && statusList.map((ele) => {
+                const val = splitAndCapitalize(ele);
                 return (
-                  <option key={ele} value={ele}>{capitalize(val)}</option>
+                  <option key={ele} value={ele}>{val}</option>
                 );
               })}
             </Form.Select>

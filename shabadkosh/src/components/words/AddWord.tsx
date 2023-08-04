@@ -14,7 +14,8 @@ import {
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, cstatus, partOfSpeech, qtypes, rstatus,
+  STATUS,
+  astatus, cstatus, qtypes, rstatus,
 } from '../constants';
 import {
   addQuestion,
@@ -28,12 +29,14 @@ import {
   seperateIdsAndNewWords,
   setOptionsDataForSubmit,
   splitAndClear,
+  splitAndCapitalize,
 } from '../util';
 import SupportWord from '../util/SupportWord';
 import Options from '../util/Options';
 import regex from '../constants/regex';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
+import PARTS_OF_SPEECH from '../constants/pos';
 
 function AddWord() {
   const [formValues, setFormValues] = useState({
@@ -51,8 +54,7 @@ function AddWord() {
   const { user } = useUserAuth();
   const { t } = useTranslation();
 
-  let status = {
-  } as object;
+  let status = [] as string[];
   if (user.role === roles.admin) {
     status = astatus;
   } else if (user.role === roles.reviewer) {
@@ -161,12 +163,16 @@ function AddWord() {
     event.preventDefault();
     const updatedSentences = sentences.map((sentence, sidx) => {
       if (event.target.id.includes('translation')) {
-        if (parseInt(event.target.id.split('translation')[1], 10) !== sidx) return sentence;
+        if (parseInt(event.target.id.split('translation')[1], 10) !== sidx) {
+          return sentence;
+        }
         return {
           ...sentence, translation: event.target.value,
         };
       } if (event.target.id.includes('sentence')) {
-        if (parseInt(event.target.id.split('sentence')[1], 10) !== sidx) return sentence;
+        if (parseInt(event.target.id.split('sentence')[1], 10) !== sidx) {
+          return sentence;
+        }
         return {
           ...sentence, sentence: event.target.value,
         };
@@ -183,7 +189,7 @@ function AddWord() {
       {
         question: '',
         translation: '',
-        type: 'context',
+        type: qtypes.CONTEXT,
         options: [],
         answer: 0,
         word_id: '',
@@ -254,27 +260,37 @@ function AddWord() {
     event.preventDefault();
     const updatedQuestions = questions.map((question, qidx) => {
       if (event.target.id.includes('question')) {
-        if (parseInt(event.target.id.split('question')[1], 10) !== qidx) return question;
+        if (parseInt(event.target.id.split('question')[1], 10) !== qidx) {
+          return question;
+        }
         return {
           ...question, question: event.target.value,
         };
       } if (event.target.id.includes('qtranslation')) {
-        if (parseInt(event.target.id.split('qtranslation')[1], 10) !== qidx) return question;
+        if (parseInt(event.target.id.split('qtranslation')[1], 10) !== qidx) {
+          return question;
+        }
         return {
           ...question, translation: event.target.value,
         };
       } if (event.target.id.includes('type')) {
-        if (parseInt(event.target.id.split('type')[1], 10) !== qidx) return question;
+        if (parseInt(event.target.id.split('type')[1], 10) !== qidx) {
+          return question;
+        }
         return {
           ...question, type: event.target.value,
         };
       } if (event.target.id.includes('options')) {
-        if (parseInt(event.target.id.split('options')[1], 10) !== qidx) return question;
+        if (parseInt(event.target.id.split('options')[1], 10) !== qidx) {
+          return question;
+        }
         return {
           ...question, options: event.target.value,
         };
       } if (event.target.id.includes('answer')) {
-        if (parseInt(event.target.id.split('answer')[1], 10) !== qidx) return question;
+        if (parseInt(event.target.id.split('answer')[1], 10) !== qidx) {
+          return question;
+        }
         return {
           ...question, answer: event.target.value,
         };
@@ -287,7 +303,9 @@ function AddWord() {
   const changeQOptions = (id: string, optionData: any) => {
     // event.preventDefault()
     const updatedQuestions = questions.map((question, qidx) => {
-      if (parseInt(id.split('options')[1], 10) !== qidx) return question;
+      if (parseInt(id.split('options')[1], 10) !== qidx) {
+        return question;
+      }
       return {
         ...question, options: optionData,
       };
@@ -330,7 +348,7 @@ function AddWord() {
         synonyms: form.synonyms,
         antonyms: form.antonyms,
         images: splitAndClear(form.images) ?? [],
-        status: form.status ?? 'creating-english',
+        status: form.status ?? STATUS.CREATING_ENGLISH,
         created_at: Timestamp.now(),
         updated_at: Timestamp.now(),
         created_by: user.email,
@@ -351,7 +369,7 @@ function AddWord() {
               ...question,
               translation: question.translation ?? '',
               options: question.options ?? [],
-              type: question.type ?? 'context',
+              type: question.type ?? qtypes.CONTEXT,
               word_id,
             });
           });
@@ -400,8 +418,8 @@ function AddWord() {
 
         formData.synonyms = synArr;
         formData.antonyms = antArr;
-        formData.part_of_speech = formData.part_of_speech ?? 'noun';
-        formData.status = 'review-english';
+        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
+        formData.status = STATUS.REVIEW_ENGLISH;
 
         // make list of docRefs from selectedWordlists
         formData.lWordlists = selectedWordlists.map((docu) => docu.id);
@@ -442,8 +460,8 @@ function AddWord() {
         formData.synonyms = synArr;
         formData.antonyms = antArr;
 
-        formData.part_of_speech = formData.part_of_speech ?? 'noun';
-        formData.status = formData.status ?? 'creating-english';
+        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
+        formData.status = formData.status ?? STATUS.CREATING_ENGLISH;
 
         // make list of docRefs from selectedWordlists
         formData.lWordlists = selectedWordlists.map((docu) => docu.id);
@@ -460,7 +478,9 @@ function AddWord() {
 
   const navigate = useNavigate();
 
-  if (isLoading) return <div>{t('LOADING')}</div>;
+  if (isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
   return (
     <div className="d-flex flex-column justify-content-center align-items-center background">
       <h2>{t('ADD_NEW', { what: t('WORD') })}</h2>
@@ -499,8 +519,8 @@ function AddWord() {
 
         <Form.Group className="mb-3" controlId="part_of_speech" onChange={handleChange}>
           <Form.Label>{t('PART_OF_SPEECH')}</Form.Label>
-          <Form.Select aria-label="Choose part of speech" defaultValue="noun">
-            {partOfSpeech.map((ele) => (
+          <Form.Select aria-label="Choose part of speech" defaultValue={PARTS_OF_SPEECH.NOUN}>
+            {Object.values(PARTS_OF_SPEECH).map((ele) => (
               <option key={ele} value={ele}>{capitalize(ele)}</option>
             ))}
           </Form.Select>
@@ -603,7 +623,7 @@ function AddWord() {
 
                 <Form.Label>{t('TYPE')}</Form.Label>
                 <Form.Select aria-label="Default select example" id={`type${idx}`} value={question.type ?? 'context'} onChange={(e) => changeQuestion(e)}>
-                  {qtypes.map((ele) => (
+                  {Object.values(qtypes).map((ele) => (
                     <option key={ele} value={ele}>{ele}</option>
                   ))}
                 </Form.Select>
@@ -637,11 +657,11 @@ function AddWord() {
         <div className="d-flex justify-content-between align-items-center">
           <Form.Group className="mb-3" controlId="status" onChange={handleChange}>
             <Form.Label>{t('STATUS')}</Form.Label>
-            <Form.Select aria-label="Default select example" defaultValue="creating-english">
-              {Object.entries(status).map((ele) => {
-                const [key, value] = ele;
+            <Form.Select aria-label="Default select example" defaultValue={STATUS.CREATING_ENGLISH}>
+              {status.map((ele) => {
+                const value = splitAndCapitalize(ele);
                 return (
-                  <option key={key + value.toString()} value={key}>{value}</option>
+                  <option key={ele + value.toString()} value={ele}>{value}</option>
                 );
               })}
             </Form.Select>

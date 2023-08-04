@@ -13,6 +13,7 @@ import { addNewWordlist, wordsCollection } from '../util/controller';
 import { auth } from '../../firebase';
 import routes from '../constants/routes';
 import { MiniWord } from '../../types/word';
+import { STATUS } from '../constants';
 
 function AddWordlist() {
   const [formValues, setFormValues] = useState({
@@ -54,7 +55,7 @@ function AddWordlist() {
     setIsLoading(true);
     addNewWordlist({
       name: formData.name,
-      status: formData.status ?? 'active',
+      status: formData.status ?? STATUS.ACTIVE,
       metadata: {
         curriculum: formData.curriculum ?? '',
         level: formData.level ?? '',
@@ -100,7 +101,9 @@ function AddWordlist() {
 
   const navigate = useNavigate();
 
-  if (isLoading) return <div>{t('LOADING')}</div>;
+  if (isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
   return (
     <div className="d-flex flex-column justify-content-center align-items-center background">
       <h2>{t('ADD_NEW_WORDLIST')}</h2>
@@ -151,7 +154,7 @@ function AddWordlist() {
         <Form.Group className="mb-3" controlId="status" onChange={handleChange}>
           <Form.Label>{t('STATUS')}</Form.Label>
           <Form.Select aria-label="Default select example" defaultValue="active">
-            {['active', 'inactive'].map((ele) => (
+            {[STATUS.ACTIVE, STATUS.INACTIVE].map((ele) => (
               <option key={ele} value={ele}>{ele}</option>
             ))}
           </Form.Select>

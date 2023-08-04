@@ -84,24 +84,32 @@ export const setOptionsDataForSubmit = (questionsData: QuestionType[]) => {
   return newQuestions;
 };
 
-export const convertTimestampToDateString = (timestamp: TimestampType) => {
-  if (!timestamp) return 'Invalid time';
+export const convertTimestampToDateString = (timestamp: TimestampType, t: any) => {
+  if (!timestamp) {
+    return t('INVALID_TIME');
+  }
   const timestampDate = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
   return timestampDate.toLocaleString('en-us', {
     year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric',
   });
 };
 
-export const convertTimestampToDate = (timestamp: TimestampType) => {
-  if (!timestamp) return 'Invalid time';
+export const convertTimestampToDate = (timestamp: TimestampType, t: any) => {
+  if (!timestamp) {
+    return t('INVALID_TIME');
+  }
   const timestampDate = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
   return timestampDate;
 };
 
 export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
+export const splitAndCapitalize = (some: any) => some.split('-').map((ele: string) => capitalize(ele.trim()));
+
 export const splitAndClear = (some: any) => {
-  if (!some) return [];
+  if (!some) {
+    return [];
+  }
   let splitList = some;
   if (typeof some === 'string') {
     splitList = some.split(',').map((ele: string) => ele.trim());

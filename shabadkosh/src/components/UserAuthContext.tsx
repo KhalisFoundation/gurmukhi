@@ -21,6 +21,7 @@ import {
 import {
   Timestamp, doc, setDoc,
 } from 'firebase/firestore';
+import { useTranslation } from 'react-i18next';
 import { auth, firestore } from '../firebase';
 import { getUser } from './util';
 import checkUser from './util/checkUser';
@@ -31,6 +32,7 @@ const userAuthContext = createContext<any>(null);
 
 export function UserAuthContextProvider({ children }: { children:ReactElement }) {
   const [user, setUser] = useState({});
+  const { t } = useTranslation();
 
   const logIn = (
     email: string,
@@ -50,9 +52,9 @@ export function UserAuthContextProvider({ children }: { children:ReactElement })
               email,
               displayName: displayName ?? email?.split('@')[0],
               created_at: Timestamp.now(),
-              created_by: 'self',
+              created_by: t('SELF'),
               updated_at: Timestamp.now(),
-              updated_by: 'self',
+              updated_by: t('SELF'),
             }).then(() => true);
           } else {
             return true;
@@ -83,14 +85,14 @@ export function UserAuthContextProvider({ children }: { children:ReactElement })
         email,
         displayName: displayName ?? name,
         created_at: Timestamp.now(),
-        created_by: 'self',
+        created_by: t('SELF'),
         updated_at: Timestamp.now(),
-        updated_by: 'self',
+        updated_by: t('SELF'),
       });
       setUser(userData);
 
       sendEmailVerification(auth.currentUser ?? userData).then(() => {
-        alert('Email verification sent!');
+        alert(t('EMAIL_VERIFICATION_SENT'));
       });
       return true;
     })

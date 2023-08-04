@@ -94,7 +94,9 @@ function ViewWordlist() {
       </h2>
     );
   }
-  if (!found) return <h2>{t('NOT_FOUND', { what: t('WORD') })}</h2>;
+  if (!found) {
+    return <h2>{t('NOT_FOUND', { what: t('WORD') })}</h2>;
+  }
   return (
     <div className="container">
       <Card className="details p-5">
@@ -161,7 +163,7 @@ function ViewWordlist() {
                 <h6>
                   {t('LABEL_VAL', {
                     label: t('CREATED_AT'),
-                    val: convertTimestampToDateString(wordlist.created_at),
+                    val: convertTimestampToDateString(wordlist.created_at, t),
                   })}
                 </h6>
                 <h6>
@@ -173,7 +175,7 @@ function ViewWordlist() {
                 <h6>
                   {t('LABEL_VAL', {
                     label: t('LAST_UPDATED_AT'),
-                    val: convertTimestampToDateString(wordlist.updated_at),
+                    val: convertTimestampToDateString(wordlist.updated_at, t),
                   })}
                 </h6>
               </div>

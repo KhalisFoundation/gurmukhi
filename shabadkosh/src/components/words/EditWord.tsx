@@ -15,7 +15,7 @@ import {
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, cstatus, qtypes,
+  astatus, rstatus, cstatus, qtypes, STATUS,
 } from '../constants';
 import {
   addQuestion,
@@ -37,12 +37,14 @@ import {
   seperateIdsAndNewWords,
   setOptionsDataForSubmit,
   splitAndClear,
+  splitAndCapitalize,
 } from '../util';
 import SupportWord from '../util/SupportWord';
 import Options from '../util/Options';
 import regex from '../constants/regex';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
+import PARTS_OF_SPEECH from '../constants/pos';
 
 function EditWord() {
   const { wordid } = useParams();
@@ -80,8 +82,7 @@ function EditWord() {
   const [submitted, setSubmitted] = useState(false);
   const { user } = useUserAuth();
 
-  let status = {
-  } as object;
+  let status = [] as string[];
   if (user.role === roles.admin) {
     status = astatus;
   } else if (user.role === roles.reviewer) {
@@ -89,18 +90,6 @@ function EditWord() {
   } else if (user.role === roles.creator) {
     status = cstatus;
   }
-
-  const partOfSpeech = [
-    'noun',
-    'pronoun',
-    'adjective',
-    'determiner',
-    'verb',
-    'adverb',
-    'preposition',
-    'conjunction',
-    'interjection',
-  ];
 
   useEffect(() => {
     let localWlist = [] as any;
@@ -311,12 +300,16 @@ function EditWord() {
     event.preventDefault();
     const updatedSentences = sentences.map((sentence, sidx) => {
       if (event.target.id.includes('translation')) {
-        if (parseInt(event.target.id.split('translation')[1], 10) !== sidx) return sentence;
+        if (parseInt(event.target.id.split('translation')[1], 10) !== sidx) {
+          return sentence;
+        }
         return {
           ...sentence, translation: event.target.value,
         };
       } if (event.target.id.includes('sentence')) {
-        if (parseInt(event.target.id.split('sentence')[1], 10) !== sidx) return sentence;
+        if (parseInt(event.target.id.split('sentence')[1], 10) !== sidx) {
+          return sentence;
+        }
         return {
           ...sentence, sentence: event.target.value,
         };
@@ -400,27 +393,37 @@ function EditWord() {
     event.preventDefault();
     const updatedQuestions = questions.map((question, qidx) => {
       if (event.target.id.includes('question')) {
-        if (parseInt(event.target.id.split('question')[1], 10) !== qidx) return question;
+        if (parseInt(event.target.id.split('question')[1], 10) !== qidx) {
+          return question;
+        }
         return {
           ...question, question: event.target.value,
         };
       } if (event.target.id.includes('qtranslation')) {
-        if (parseInt(event.target.id.split('qtranslation')[1], 10) !== qidx) return question;
+        if (parseInt(event.target.id.split('qtranslation')[1], 10) !== qidx) {
+          return question;
+        }
         return {
           ...question, translation: event.target.value,
         };
       } if (event.target.id.includes('type')) {
-        if (parseInt(event.target.id.split('type')[1], 10) !== qidx) return question;
+        if (parseInt(event.target.id.split('type')[1], 10) !== qidx) {
+          return question;
+        }
         return {
           ...question, type: event.target.value,
         };
       } if (event.target.id.includes('options')) {
-        if (parseInt(event.target.id.split('options')[1], 10) !== qidx) return question;
+        if (parseInt(event.target.id.split('options')[1], 10) !== qidx) {
+          return question;
+        }
         return {
           ...question, options: event.target.value,
         };
       } if (event.target.id.includes('answer')) {
-        if (parseInt(event.target.id.split('answer')[1], 10) !== qidx) return question;
+        if (parseInt(event.target.id.split('answer')[1], 10) !== qidx) {
+          return question;
+        }
         return {
           ...question, answer: event.target.value,
         };
@@ -434,7 +437,9 @@ function EditWord() {
     const typo = (type as any)?.value;
     // event.preventDefault()
     const updatedQuestions = questions.map((question, qidx) => {
-      if (parseInt(id.split('options')[1], 10) !== qidx) return question;
+      if (parseInt(id.split('options')[1], 10) !== qidx) {
+        return question;
+      }
       if (optionData[optionData.length - 1].option && optionData[optionData.length - 1].option.includes(' ') && typo !== 'meaning') {
         alert('Option cannot contain spaces!');
         return question;
@@ -480,7 +485,7 @@ function EditWord() {
           synonyms: form.synonyms,
           antonyms: form.antonyms,
           images: splitAndClear(form.images) ?? [],
-          status: form.status ?? Object.keys(status)[0],
+          status: form.status ?? STATUS.CREATING_ENGLISH,
           created_at: word.created_at ?? Timestamp.now(),
           updated_at: Timestamp.now(),
           created_by: form.created_by ?? user.email,
@@ -573,23 +578,23 @@ function EditWord() {
 
         formData.synonyms = synArr;
         formData.antonyms = antArr;
-        formData.part_of_speech = formData.part_of_speech ?? 'noun';
+        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
         if (word.status) {
           if (type === 'review') {
-            if (['creating-english', 'feedback-english'].includes(word.status)) {
-              formData.status = 'review-english';
-            } else if (['creating-punjabi', 'feedback-punjabi'].includes(word.status)) {
-              formData.status = 'review-final';
+            if ([STATUS.CREATING_ENGLISH, STATUS.FEEDBACK_ENGLISH].includes(word.status)) {
+              formData.status = STATUS.REVIEW_ENGLISH;
+            } else if ([STATUS.CREATING_PUNJABI, STATUS.FEEDBACK_PUNJABI].includes(word.status)) {
+              formData.status = STATUS.REVIEW_FINAL;
             }
           } else if (type === 'approve') {
-            if (word.status === 'review-english') {
-              formData.status = 'creating-punjabi';
-            } else if (word.status === 'review-final') {
-              formData.status = 'active';
+            if (word.status === STATUS.REVIEW_ENGLISH) {
+              formData.status = STATUS.CREATING_PUNJABI;
+            } else if (word.status === STATUS.REVIEW_FINAL) {
+              formData.status = STATUS.ACTIVE;
             }
           }
         } else {
-          formData.status = 'review-english';
+          formData.status = STATUS.REVIEW_ENGLISH;
         }
 
         // make list of docRefs from selectedWordlists
@@ -632,8 +637,8 @@ function EditWord() {
 
         formData.synonyms = synArr;
         formData.antonyms = antArr;
-        formData.part_of_speech = formData.part_of_speech ?? 'noun';
-        formData.status = formData.status ?? 'creating-english';
+        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
+        formData.status = formData.status ?? STATUS.CREATING_ENGLISH;
 
         // make list of docRefs from selectedWordlists
         formData.wordlists = selectedWordlists.map((docu) => docu.id);
@@ -645,9 +650,13 @@ function EditWord() {
 
   const navigate = useNavigate();
 
-  if (isLoading) return <h2>{t('LOADING')}</h2>;
-  if (!found) return <h2>{t('NOT_FOUND', { what: t('WORD') })}</h2>;
-  if (!Object.keys(status).includes(word.status ?? 'creating-english')) { navigate(-1); }
+  if (isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
+  if (!found) {
+    return <h2>{t('NOT_FOUND', { what: t('WORD') })}</h2>;
+  }
+  if (!status.includes(word.status ?? STATUS.CREATING_ENGLISH)) { navigate(-1); }
   return (
     <div className="d-flex flex-column justify-content-center align-items-center background">
       <h2>{t('EDIT_TEXT', { for: t('WORD') })}</h2>
@@ -686,8 +695,8 @@ function EditWord() {
 
         <Form.Group className="mb-3" controlId="part_of_speech" onChange={handleChange}>
           <Form.Label>{t('PART_OF_SPEECH')}</Form.Label>
-          <Form.Select aria-label="Choose part of speech" defaultValue={word.part_of_speech ?? 'noun'}>
-            {partOfSpeech.map((ele) => (
+          <Form.Select aria-label="Choose part of speech" defaultValue={word.part_of_speech ?? PARTS_OF_SPEECH.NOUN}>
+            {Object.values(PARTS_OF_SPEECH).map((ele) => (
               <option key={ele} value={ele}>{capitalize(ele)}</option>
             ))}
           </Form.Select>
@@ -806,7 +815,7 @@ function EditWord() {
 
                 <Form.Label>{t('TYPE')}</Form.Label>
                 <Form.Select aria-label="Default select example" id={`type${idx}`} value={question.type ?? 'context'} onChange={(e) => changeQuestion(e)}>
-                  {qtypes.map((ele) => (
+                  {Object.values(qtypes).map((ele) => (
                     <option key={ele} value={ele}>{ele}</option>
                   ))}
                 </Form.Select>
@@ -841,13 +850,13 @@ function EditWord() {
           <Form.Group className="mb-3" controlId="status" onChange={handleChange}>
             <Form.Label>{t('STATUS')}</Form.Label>
             <Form.Select aria-label="Default select example">
-              {Object.entries(status).map((ele) => {
-                const [key, value] = ele;
+              {status.map((ele) => {
+                const value = splitAndCapitalize(ele);
                 return (
                   <option
-                    key={key + value.toString()}
-                    value={key}
-                    selected={key === word.status}
+                    key={ele + value.toString()}
+                    value={ele}
+                    selected={ele === word.status}
                   >
                     {value}
                   </option>
@@ -869,17 +878,20 @@ function EditWord() {
           <Button variant="primary" type="submit">
             Submit
           </Button>
-          {word.status && [
-            'creating-english',
-            'creating-punjabi',
-            'feedback-english', 'feedback-english'].includes(word.status)
+          {word.status && cstatus.includes(word.status)
             ? (
               <Button variant="primary" type="button" onClick={(e) => sendForReview(e)}>
                 {t('SEND_FOR_REVIEW')}
               </Button>
             )
             : null}
-          {word.status && [roles.reviewer, roles.admin].includes(user.role) && ['review-english', 'review-final'].includes(word.status)
+          {word.status && [
+            roles.reviewer,
+            roles.admin,
+          ].includes(user.role) && [
+            STATUS.REVIEW_ENGLISH,
+            STATUS.REVIEW_FINAL,
+          ].includes(word.status)
             ? (
               <Button variant="primary" type="button" onClick={(e) => sendForReview(e, 'approve')}>
                 {t('APPROVE')}

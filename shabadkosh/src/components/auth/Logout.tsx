@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import routes from '../constants/routes';
 import { useUserAuth } from '../UserAuthContext';
 
-export default function Logout() {
+function Logout() {
   const navigate = useNavigate();
   const { logOut } = useUserAuth();
   const { t } = useTranslation();
@@ -27,3 +27,5 @@ export default function Logout() {
     <div>{t('LOGOUT')}</div>
   );
 }
+
+export default Logout;

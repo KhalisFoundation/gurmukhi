@@ -45,7 +45,7 @@ i18n.use(initReactI18next).init({
   },
 });
 
-export default function App() {
+function App() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <div className="App">
@@ -192,3 +192,5 @@ export default function App() {
     </Suspense>
   );
 }
+
+export default App;

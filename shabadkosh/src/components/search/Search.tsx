@@ -60,7 +60,9 @@ function Search() {
     setIsLoading(false);
   }, []);
 
-  if (isLoading) return <div>{t('LOADING')}</div>;
+  if (isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
   return (
     <div className="container justify-content-center align-items-center">
       <Form onSubmit={handleSearch}>
@@ -106,9 +108,9 @@ function Search() {
               <td>{word.meaning_punjabi}</td>
               <td>{word.meaning_english}</td>
               <td>{word.created_by}</td>
-              <td>{convertTimestampToDateString(word.created_at)}</td>
+              <td>{convertTimestampToDateString(word.created_at, t)}</td>
               <td>{word.updated_by}</td>
-              <td>{convertTimestampToDateString(word.updated_at)}</td>
+              <td>{convertTimestampToDateString(word.updated_at, t)}</td>
             </tr>
           ))}
         </tbody>

@@ -26,7 +26,9 @@ function Profile() {
 
   const editUrl = routes.editUser.replace(':uid', user.uid);
 
-  if (isLoading) return <h2>{t('LOADING')}</h2>;
+  if (isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
   return (
     <div className="container m-4">
       <Card>

@@ -83,7 +83,7 @@ function Wordlists() {
         </div>
         <div className="d-flex flex-column align-items-end">
           <ButtonGroup>
-            <Button href={viewUrl} variant="success">{t('view')}</Button>
+            <Button href={viewUrl} variant="success">{t('VIEW')}</Button>
             <Button href={editUrl} variant="primary">{t('EDIT')}</Button>
             {user?.role === roles.admin ? <Button onClick={() => delWordlist(wordlist)} variant="danger">{t('DELETE')}</Button> : null }
           </ButtonGroup>
@@ -95,7 +95,9 @@ function Wordlists() {
     );
   });
 
-  if (wordlists.length === 0 || isLoading) return <h2>{t('LOADING')}</h2>;
+  if (wordlists.length === 0 || isLoading) {
+    return <h2>{t('LOADING')}</h2>;
+  }
   return (
     <div className="container mt-2">
       <div className="d-flex justify-content-between align-items-center mb-3">
