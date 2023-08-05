@@ -33,7 +33,7 @@ const Options = ({
     if (newOption.includes(':')) {
       const [gurmukhi, english] = newOption.split(':').map((val) => val.trim());
       if (gurmukhi.match(regex.gurmukhiSentenceRegex)
-        && english.match(regex.englishSentenceRegex)) {
+        && english.match(regex.englishQuestionTranslationRegex)) {
         const d = {
           option: gurmukhi,
           translation: english,
@@ -119,7 +119,7 @@ const Options = ({
         </div>
         <div>
           {t('TRANSLATION')}
-          <Form.Control id={`otranslation${id}`} type="text" placeholder="Enter translation" pattern={regex.englishSentenceRegex} value={translation} onChange={(e) => setTranslation(e.target.value)} />
+          <Form.Control id={`otranslation${id}`} type="text" placeholder="Enter translation" pattern={regex.englishQuestionTranslationRegex} value={translation} onChange={(e) => setTranslation(e.target.value)} />
           <Form.Control.Feedback type="invalid" itemID={`otranslation${id}`}>{t('FEEDBACK_ENGLISH', { for: t('TRANSLATION') })}</Form.Control.Feedback>
         </div>
         <div>

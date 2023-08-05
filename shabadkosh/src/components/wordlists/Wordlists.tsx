@@ -32,9 +32,9 @@ const Wordlists = () => {
           ...wlDoc.data(),
         })),
       );
+      setIsLoading(false);
     });
 
-    setIsLoading(false);
   }, []);
 
   const sortWordlists = (unwordlists: any[]) => {
@@ -71,7 +71,7 @@ const Wordlists = () => {
                 return (
                   <li key={key}>
                     {t('LABEL_VAL', {
-                      label: t(key),
+                      label: t(key.toUpperCase()),
                       val,
                     })}
                   </li>
@@ -95,8 +95,12 @@ const Wordlists = () => {
     );
   });
 
-  if (wordlists.length === 0 || isLoading) {
-    return <h2>{t('LOADING')}</h2>;
+  if (wordlists.length === 0) {
+    if (isLoading) {
+      return <h2>{t('LOADING')}</h2>;
+    } else {
+      return <h2 className="no-wordlists">{t('NO_VALS', { vals: t('WORDLISTS') })}</h2>;
+    }
   }
   return (
     <div className="container mt-2">
@@ -104,11 +108,11 @@ const Wordlists = () => {
         <h2>{t('WORDLISTS')}</h2>
         <Button href={routes.newWordlist}>{t('ADD_NEW', { what: t('WORDLIST') })}</Button>
       </div>
-      {wordlists && wordlists.length ? (
+      {wordlists && wordlists.length && (
         <ListGroup>
           {wordlistsData}
         </ListGroup>
-      ) : <h2>{t('NO_VALS', { vals: t('WORDLISTS') })}</h2>}
+      )}
     </div>
   );
 };

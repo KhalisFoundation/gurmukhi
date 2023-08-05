@@ -112,9 +112,9 @@ const ViewDictionary = () => {
       }));
       setWords(data);
       setFilteredWords(data);
+      setIsLoading(false);
     });
 
-    setIsLoading(false);
   }, []);
 
   const delWord = (deleted_word: any) => {
@@ -233,8 +233,12 @@ const ViewDictionary = () => {
       </Card>
     );
 
-  if (words.length === 0 || isLoading) {
-    return <h2>{t('LOADING')}</h2>;
+  if (words.length === 0) {
+    if (isLoading) {
+      return <h2>{t('LOADING')}</h2>;
+    } else {
+      return <h2 className="no-words">{t('NO_VALS', { vals: t('WORDS') })}</h2>;
+    }
   }
   return (
     <div className="container mt-2">
@@ -293,7 +297,7 @@ const ViewDictionary = () => {
         </div>
 
       </Form>
-      {filteredWords && filteredWords.length ? (
+      {filteredWords && filteredWords.length && (
         <div className="d-flex ms-2 justify-content-evenly">
           <Container className="p-4">
             { listView
@@ -305,8 +309,6 @@ const ViewDictionary = () => {
               )}
           </Container>
         </div>
-      ) : (
-        <h2 className="no-words">{t('NO_VALS', { vals: t('WORDS') })}</h2>
       )}
     </div>
   );
