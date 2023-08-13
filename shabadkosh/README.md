@@ -6,11 +6,11 @@ To run this project, you will need to add the following environment variables to
 
 The following variables are required to connect Firestore database and Firebase Authentication :
 
-`REACT_APP_API_KEY`,
-`REACT_APP_AUTH_DOMAIN`,
-`REACT_APP_PROJECT_ID`,
-`REACT_APP_STORAGE_BUCKET`,
-`REACT_APP_MESSAGING_SENDER_ID`,
+`REACT_APP_API_KEY`
+`REACT_APP_AUTH_DOMAIN`
+`REACT_APP_PROJECT_ID`
+`REACT_APP_STORAGE_BUCKET`
+`REACT_APP_MESSAGING_SENDER_ID`
 `REACT_APP_APP_ID`
 
 To obtain these variables, you will need to create a Firebase project and create a web app within it. Firebase then automatically displays these variables to be used in .env

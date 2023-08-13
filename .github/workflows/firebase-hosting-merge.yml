@@ -26,9 +26,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - run: |
-          # cd ./shabadkosh
-          yarn install --frozen-lockfile && yarn run build
+      - run: yarn install --frozen-lockfile && yarn run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           entryPoint: ./shabadkosh
@@ -51,9 +49,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - run: |
-          # cd ./shabadkosh
-          yarn install --frozen-lockfile && yarn run build
+      - run: yarn install --frozen-lockfile && yarn run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           entryPoint: ./shabadkosh
@@ -76,9 +72,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - run: |
-          # cd ./shabadkosh
-          yarn install --frozen-lockfile && yarn run build
+      - run: yarn install --frozen-lockfile && yarn run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           entryPoint: ./shabadkosh

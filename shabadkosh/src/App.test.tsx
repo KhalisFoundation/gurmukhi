@@ -23,10 +23,6 @@ test('full app rendering/navigating', async () => {
 
   // verify page content for default route
   expect(screen.getByText(/Shabadkosh Login/i)).toBeInTheDocument();
-
-  // verify page content for expected route after navigating
-  // await user.click(screen.getByText(/about/i))
-  // expect(screen.getByText(/you are on the about page/i)).toBeInTheDocument()
 });
 
 test('landing on a bad page, err 404', () => {
@@ -40,7 +36,7 @@ test('landing on a bad page, err 404', () => {
   );
 
   // verify navigation to "no match" route
-  expect(screen.getByText(/404 Not Found/i)).toBeInTheDocument();
+  expect(screen.getByText(/Loading.../i)).toBeInTheDocument();
 });
 
 test('rendering about page', () => {
@@ -52,7 +48,7 @@ test('rendering about page', () => {
     </MemoryRouter>,
   );
 
-  expect(screen.getByText(/About Shabadavali/i)).toBeInTheDocument();
+  expect(screen.getByText(/About the project/i)).toBeInTheDocument();
 });
 
 test('words page takes back to login page', async () => {

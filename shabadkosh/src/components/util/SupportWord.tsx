@@ -35,7 +35,7 @@ const SupportWord = ({
     e.preventDefault();
     if (option.includes(':')) {
       const [gurmukhi, english] = option.split(':').map((val) => val.trim());
-      if (gurmukhi.match('^[\u0A00-\u0A76]+$') && english.match('^[a-zA-Z0-9 ]+$')) {
+      if (gurmukhi.match(regex.gurmukhiWordRegex) && english.match(regex.englishQuestionRegex)) {
         const d = {
           value: gurmukhi,
           translation: english,
