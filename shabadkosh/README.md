@@ -1,3 +1,21 @@
+# Gurmukhi Shabadkosh
+An internal to allow content team members to perform CRUD operations on Shabadkosh database for storing data for Shabadavali project.
+
+## Environment Variables
+To run this project, you will need to add the following environment variables to your .env file
+
+The following variables are required to connect Firestore database and Firebase Authentication :
+
+`REACT_APP_API_KEY`
+`REACT_APP_AUTH_DOMAIN`
+`REACT_APP_PROJECT_ID`
+`REACT_APP_STORAGE_BUCKET`
+`REACT_APP_MESSAGING_SENDER_ID`
+`REACT_APP_APP_ID`
+
+To obtain these variables, you will need to create a Firebase project and create a web app within it. Firebase then automatically displays these variables to be used in .env
+Otherwise, you can find these variables in the project settings.
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
@@ -71,16 +89,10 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 
 # Linting
 
-## Prettier
-
-```
-yarn prettier --write .
-```
-
 ## eslint
 
 ```
-eslint src
+yarn run lint
 ```
 
 # firebase
@@ -94,9 +106,4 @@ firebase init
 ```
 yarn build
 firebase deploy
-```
-
-## yaml linting
-```
-yamllint <filename>
 ```
