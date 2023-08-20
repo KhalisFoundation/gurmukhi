@@ -7,9 +7,18 @@ defaults:
   run:
     working-directory: ./shabadkosh
 jobs:
-  build_and_preview:
+  build_and_preview_on_dev:
     if: '${{ github.event.pull_request.head.repo.full_name == github.repository }}'
     runs-on: ubuntu-latest
+    environment: dev
+    env:
+      REACT_APP_API_KEY: ${{ secrets.REACT_APP_API_KEY }}
+      REACT_APP_AUTH_DOMAIN: ${{ secrets.REACT_APP_AUTH_DOMAIN }}
+      REACT_APP_PROJECT_ID: ${{ secrets.REACT_APP_PROJECT_ID }}
+      REACT_APP_STORAGE_BUCKET: ${{ secrets.REACT_APP_STORAGE_BUCKET }}
+      REACT_APP_MESSAGING_SENDER_ID: ${{ secrets.REACT_APP_MESSAGING_SENDER_ID }}
+      REACT_APP_APP_ID: ${{ secrets.REACT_APP_APP_ID }}
+      REACT_APP_MEASUREMENT_ID: ${{ secrets.REACT_APP_MEASUREMENT_ID }}
     steps:
       - uses: actions/checkout@v3
       - run: |
@@ -20,4 +29,4 @@ jobs:
           entryPoint: ./shabadkosh
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GURMUKHI_DEV }}'
-          projectId: gurmukhi-dev
+          projectId: '${{ secrets.REACT_APP_PROJECT_ID }}'
