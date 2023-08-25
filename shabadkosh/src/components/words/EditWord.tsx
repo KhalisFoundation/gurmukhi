@@ -38,8 +38,6 @@ import {
   setOptionsDataForSubmit,
   splitAndClear,
   splitAndCapitalize,
-  hasValidOptions,
-  createWordsFromOptions,
 } from '../util';
 import SupportWord from '../util/SupportWord';
 import Options from '../util/Options';
@@ -472,7 +470,7 @@ const EditWord = () => {
 
   const editWord = async (formData: any) => {
     setIsLoading(true);
-    const { lSentences, lQuestions, ...form } = formData;
+    const { fSentences, fQuestions, ...form } = formData;
 
     const wordIsNew = await isWordNew(form.word, wordid);
     if (wordIsNew) {
@@ -498,7 +496,7 @@ const EditWord = () => {
       )
         .then(() => {
         // use return value of addWord to add sentences
-          lSentences.forEach((sentence: any) => {
+          fSentences.forEach((sentence: any) => {
             const lSentence = {
               ...sentence, word_id: wordid,
             };
@@ -512,7 +510,7 @@ const EditWord = () => {
             }
           });
 
-          lQuestions.forEach((question: any) => {
+          fQuestions.forEach((question: any) => {
             const lQuestion = {
               ...question,
               translation: question.translation ?? '',
@@ -539,7 +537,74 @@ const EditWord = () => {
     }
   };
 
-  const handleSubmit = async (e: any, type: string = 'create') => {
+  const sendForReview = (e: any, type = 'review') => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const { form } = e.target;
+    if (form.checkValidity() === false) {
+      setValidated(true);
+      return;
+    }
+
+    const formData = {
+    } as any;
+    Object.keys(formValues).map((ele) => {
+      if (!ele.match(/sentence\d+/)
+          && !ele.match(/translation\d+/)
+          && !ele.match(/question\d+/)
+          && !ele.match(/type\d+/)
+          && !ele.match(/options\d+/)
+          && !ele.match(/answer\d+/)) {
+        formData[ele] = formValues[ele];
+      }
+      return null;
+    });
+
+    formData.fSentences = sentences;
+    formData.fQuestions = questions.map((ele) => ({
+      ...ele,
+      options: (ele.options as MiniWord[]).map((opt) => opt.id),
+    }));
+    formData.is_for_support = support;
+
+    const [uniqueSyn, synIds] = seperateIdsAndNewWords(synonyms);
+    const [uniqueAnt, antIds] = seperateIdsAndNewWords(antonyms);
+
+    createSupportWords(uniqueSyn, user).then((synIdlist) => {
+      createSupportWords(uniqueAnt, user).then((antIdList) => {
+        const synArr = synIds.concat(synIdlist);
+        const antArr = antIds.concat(antIdList);
+
+        formData.synonyms = synArr;
+        formData.antonyms = antArr;
+        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
+        if (word.status) {
+          if (type === 'review') {
+            if ([STATUS.CREATING_ENGLISH, STATUS.FEEDBACK_ENGLISH].includes(word.status)) {
+              formData.status = STATUS.REVIEW_ENGLISH;
+            } else if ([STATUS.CREATING_PUNJABI, STATUS.FEEDBACK_PUNJABI].includes(word.status)) {
+              formData.status = STATUS.REVIEW_FINAL;
+            }
+          } else if (type === 'approve') {
+            if (word.status === STATUS.REVIEW_ENGLISH) {
+              formData.status = STATUS.CREATING_PUNJABI;
+            } else if (word.status === STATUS.REVIEW_FINAL) {
+              formData.status = STATUS.ACTIVE;
+            }
+          }
+        } else {
+          formData.status = STATUS.REVIEW_ENGLISH;
+        }
+
+        // make list of docRefs from selectedWordlists
+        formData.wordlists = selectedWordlists.map((docu) => docu.id);
+        editWord(formData);
+      });
+    });
+  };
+
+  const handleSubmit = (e: any) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -558,57 +623,29 @@ const EditWord = () => {
       return null;
     });
 
-    formData.lSentences = sentences;
-    formData.lQuestions = setOptionsDataForSubmit(questions);
+    formData.fSentences = sentences;
+    formData.fQuestions = setOptionsDataForSubmit(questions);
     formData.is_for_support = support;
 
-    const validOptions = hasValidOptions(formData.lQuestions);
+    const [uniqueSyn, synIds] = seperateIdsAndNewWords(synonyms);
+    const [uniqueAnt, antIds] = seperateIdsAndNewWords(antonyms);
 
-    if (!validOptions) {
-      alert('Only question type - meaning can have sentences as options!');
-      setIsLoading(false);
-    } else {
-      const [uniqueSyn, synIds] = seperateIdsAndNewWords(synonyms);
-      const [uniqueAnt, antIds] = seperateIdsAndNewWords(antonyms);
+    createSupportWords(uniqueSyn, user).then((synIdlist) => {
+      createSupportWords(uniqueAnt, user).then((antIdList) => {
+        const synArr = synIds.concat(synIdlist);
+        const antArr = antIds.concat(antIdList);
 
-      createSupportWords(uniqueSyn, user).then((synIdlist) => {
-        createSupportWords(uniqueAnt, user).then((antIdList) => {
-          createWordsFromOptions(formData.lQuestions, user).then((qData) => {
-            const synArr = synIds.concat(synIdlist);
-            const antArr = antIds.concat(antIdList);
+        formData.synonyms = synArr;
+        formData.antonyms = antArr;
+        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
+        formData.status = formData.status ?? STATUS.CREATING_ENGLISH;
 
-            formData.synonyms = synArr;
-            formData.antonyms = antArr;
-            formData.lQuestions = qData;
-            formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
-            let lStatus;
-            if (word.status) {
-              if (type === 'create') {
-                lStatus = STATUS.CREATING_ENGLISH;
-              } else if (type === 'review') {
-                if ([STATUS.CREATING_ENGLISH, STATUS.FEEDBACK_ENGLISH].includes(word.status)) {
-                  lStatus = STATUS.REVIEW_ENGLISH;
-                } else if ([STATUS.CREATING_PUNJABI, STATUS.FEEDBACK_PUNJABI].includes(word.status)) {
-                  lStatus = STATUS.REVIEW_FINAL;
-                }
-              } else if (type === 'approve') {
-                if (word.status === STATUS.REVIEW_ENGLISH) {
-                  formData.status = STATUS.CREATING_PUNJABI;
-                } else if (word.status === STATUS.REVIEW_FINAL) {
-                  formData.status = STATUS.ACTIVE;
-                }
-              }
-            }
-            formData.status = lStatus;
-
-            // make list of docRefs from selectedWordlists
-            formData.wordlists = selectedWordlists.map((docu) => docu.id);
-            setWordInWordlists(selectedWordlists, removedWordlists, wordid as string);
-            editWord(formData);
-          });
-        });
+        // make list of docRefs from selectedWordlists
+        formData.wordlists = selectedWordlists.map((docu) => docu.id);
+        setWordInWordlists(selectedWordlists, removedWordlists, wordid as string);
+        editWord(formData);
       });
-    }
+    });
   };
 
   const navigate = useNavigate();
@@ -843,7 +880,7 @@ const EditWord = () => {
           </Button>
           {word.status && cstatus.includes(word.status)
             ? (
-              <Button variant="primary" type="button" onClick={(e) => handleSubmit(e, 'review')}>
+              <Button variant="primary" type="button" onClick={(e) => sendForReview(e)}>
                 {t('SEND_FOR_REVIEW')}
               </Button>
             )
@@ -856,7 +893,7 @@ const EditWord = () => {
             STATUS.REVIEW_FINAL,
           ].includes(word.status)
             ? (
-              <Button variant="primary" type="button" onClick={(e) => handleSubmit(e, 'approve')}>
+              <Button variant="primary" type="button" onClick={(e) => sendForReview(e, 'approve')}>
                 {t('APPROVE')}
               </Button>
             )
