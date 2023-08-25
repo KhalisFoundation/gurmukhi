@@ -43,6 +43,46 @@ export const seperateIdsAndNewSentences = (some: any) => {
   return [uniqueList, idList];
 };
 
+export const hasValidOptions = (questions: any) => {
+  let valid = true;
+  if (!questions) {
+    valid = false;
+  }
+  questions.forEach((question: any) => {
+    if (question.type !== 'meaning') {
+      question.options.forEach((ele: any) => {
+        if (!Object.keys(ele).includes('id') && ele.option) {
+          if (ele.option.includes(' ')) {
+            valid = false;
+          }
+        }
+      });
+    }
+  });
+  return valid;
+};
+
+export const seperateIdsAndNewOptions = (some: any) => {
+  const uniqueList = [] as any[];
+  const idList = [] as string[];
+  some.forEach((item: any) => {
+    const duplicate = uniqueList.find(
+      (obj) => obj.option === item.option,
+    );
+    if (!duplicate) {
+      if (typeof item === 'string') {
+        idList.push(item);
+      } else {
+        uniqueList.push({
+          option: item.option,
+          translation: item.translation,
+        });
+      }
+    }
+  });
+  return [uniqueList, idList];
+};
+
 export const createSupportWords = async (wordList: NewWordType[], user: any) => {
   const w = wordList.map((ele) => ({
     word: ele.word,
@@ -66,6 +106,39 @@ export const createSupportSentences = async (sentList: NewSentenceType[], user: 
     updated_at: Timestamp.now(),
   }));
   return createMultipleValsAtOnce(s, 'sentences');
+};
+
+export const createOptions = async (optList: any[], user: any) => {
+  const o = optList.map((item) => ({
+    word: item.option,
+    translation: item.translation,
+    is_for_support: true,
+    created_by: user.email,
+    created_at: Timestamp.now(),
+    updated_by: user.email,
+    updated_at: Timestamp.now(),
+  }));
+  return createMultipleValsAtOnce(o, 'words');
+};
+
+export const createWordsFromOptions = async (questions: any[], user: any) => {
+  return Promise.all(questions.map(async (question: any) => {
+    if (question.type !== 'meaning') {
+      const [uniqueList, idList] = seperateIdsAndNewOptions(question.options);
+      const lOptions = idList;
+      return createOptions(uniqueList, user).then((res) => {
+        lOptions.push(...res);
+        const q = {
+          ...question,
+          options: lOptions,
+        };
+
+        return q;
+      });
+    } else {
+      return question;
+    }
+  })).then((res) => res);
 };
 
 export const setOptionsDataForSubmit = (questionsData: QuestionType[]) => {

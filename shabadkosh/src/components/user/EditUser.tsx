@@ -166,7 +166,7 @@ const EditUser = () => {
         {submitted ? (
           <Card className="background mt-4">
             <Card.Body className="rounded p-4 p-sm-3">
-              <h3>{t('userSuccessUpdate')}</h3>
+              <h3>{t('USER_UPDATE_SUCCESS')}</h3>
               <Button variant="primary" onClick={() => navigate(routes.users)}>{t('BACK_TO', { page: t('USERS') })}</Button>
             </Card.Body>
           </Card>

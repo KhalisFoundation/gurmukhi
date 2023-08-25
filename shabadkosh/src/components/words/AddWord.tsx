@@ -30,6 +30,8 @@ import {
   setOptionsDataForSubmit,
   splitAndClear,
   splitAndCapitalize,
+  hasValidOptions,
+  createWordsFromOptions,
 } from '../util';
 import SupportWord from '../util/SupportWord';
 import Options from '../util/Options';
@@ -386,48 +388,7 @@ const AddWord = () => {
     }
   };
 
-  const sendForReview = (e: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const { form } = e.target;
-    if (form.checkValidity() === false) {
-      setValidated(true);
-      return;
-    }
-
-    const formData = {
-    } as any;
-    Object.keys(formValues).forEach((ele) => {
-      if (!ele.match(/sentence\d+/) && !ele.match(/translation\d+/) && !ele.match(/question\d+/) && !ele.match(/type\d+/) && !ele.match(/options\d+/) && !ele.match(/answer\d+/)) {
-        formData[ele] = formValues[ele];
-      }
-    });
-
-    formData.lSentences = sentences;
-    formData.lQuestions = setOptionsDataForSubmit(questions);
-
-    const [uniqueSyn, synIds] = seperateIdsAndNewWords(synonyms);
-    const [uniqueAnt, antIds] = seperateIdsAndNewWords(antonyms);
-
-    createSupportWords(uniqueSyn, user).then((synIdlist) => {
-      createSupportWords(uniqueAnt, user).then((antIdList) => {
-        const synArr = synIds.concat(synIdlist);
-        const antArr = antIds.concat(antIdList);
-
-        formData.synonyms = synArr;
-        formData.antonyms = antArr;
-        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
-        formData.status = STATUS.REVIEW_ENGLISH;
-
-        // make list of docRefs from selectedWordlists
-        formData.lWordlists = selectedWordlists.map((docu) => docu.id);
-        addNewWord(formData);
-      });
-    });
-  };
-
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: any, type: string = 'create') => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -448,25 +409,45 @@ const AddWord = () => {
     formData.lSentences = sentences;
     formData.lQuestions = setOptionsDataForSubmit(questions);
 
-    const [uniqueSyn, synIds] = seperateIdsAndNewWords(synonyms);
-    const [uniqueAnt, antIds] = seperateIdsAndNewWords(antonyms);
+    const validOptions = hasValidOptions(formData.lQuestions);
 
-    createSupportWords(uniqueSyn, user).then((synIdlist) => {
-      createSupportWords(uniqueAnt, user).then((antIdList) => {
-        const synArr = synIds.concat(synIdlist);
-        const antArr = antIds.concat(antIdList);
+    const wordIsNew = await isWordNew(formData.word);
+    if (!wordIsNew) {
+      alert('Word already exists!');
+      setIsLoading(false);
+    } else if (!validOptions) {
+      alert('Only question type - meaning can have sentences as options!');
+      setIsLoading(false);
+    } else {
+      const [uniqueSyn, synIds] = seperateIdsAndNewWords(synonyms);
+      const [uniqueAnt, antIds] = seperateIdsAndNewWords(antonyms);
 
-        formData.synonyms = synArr;
-        formData.antonyms = antArr;
+      createSupportWords(uniqueSyn, user).then((synIdlist) => {
+        createSupportWords(uniqueAnt, user).then((antIdList) => {
+          createWordsFromOptions(formData.lQuestions, user).then((qData) => {
+            const synArr = synIds.concat(synIdlist);
+            const antArr = antIds.concat(antIdList);
+            
+            formData.synonyms = synArr;
+            formData.antonyms = antArr;
+            formData.lQuestions = qData;
 
-        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
-        formData.status = formData.status ?? STATUS.CREATING_ENGLISH;
+            formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
+            let lStatus;
+            if (type === 'create') {
+              lStatus = STATUS.CREATING_ENGLISH;
+            } else if (type === 'review') {
+              lStatus = STATUS.REVIEW_ENGLISH;
+            }
+            formData.status = lStatus ?? STATUS.CREATING_ENGLISH;
 
-        // make list of docRefs from selectedWordlists
-        formData.lWordlists = selectedWordlists.map((docu) => docu.id);
-        addNewWord(formData);
+            // make list of docRefs from selectedWordlists
+            formData.lWordlists = selectedWordlists.map((docu) => docu.id);
+            addNewWord(formData);
+          });
+        });
       });
-    });
+    }
   };
 
   const unsetSubmitted = () => {
@@ -678,7 +659,7 @@ const AddWord = () => {
           <Button variant="primary" type="submit">
             {t('SUBMIT')}
           </Button>
-          <Button variant="primary" type="button" onClick={(e) => sendForReview(e)}>
+          <Button variant="primary" type="button" onClick={(e) => handleSubmit(e, 'review')}>
             {t('SEND_FOR_REVIEW')}
           </Button>
         </div>

@@ -368,7 +368,7 @@ const WordDetail = () => {
           ) : null}
           <br />
           {word.is_for_support
-            ? <h6>{t('supportWordDesc')}</h6>
+            ? <h6>{t('SUPPORT_WORD_DESC')}</h6>
             : null}
           <h4>
             {t('LABEL_VAL', {
