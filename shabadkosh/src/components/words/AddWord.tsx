@@ -551,7 +551,7 @@ const AddWord = () => {
                 <button type="button" className="btn btn-sm" onClick={(e) => removeSentence(idx, e)}>🗑️</button>
               </div>
               {t('SENTENCE')}
-              <Form.Control id={`sentence${idx}`} className="m-1" type="text" value={sentence.sentence} placeholder="ਇੱਥੇ ਵਾਕ ਦਰਜ ਕਰੋ" onChange={(e) => changeSentence(e)} pattern={regex.gurmukhiSentenceRegex} required />
+              <Form.Control id={`sentence${idx}`} className="m-1" type="text" value={sentence.sentence} placeholder="ਇੱਥੇ ਵਾਕ ਦਰਜ ਕਰੋ" onChange={(e) => changeSentence(e)} pattern={regex.gurmukhiSentenceRegex} />
               <Form.Control.Feedback type="invalid" itemID={`sentence${idx}`}>
                 {t('FEEDBACK_GURMUKHI', { for: 'sentence' })}
               </Form.Control.Feedback>
