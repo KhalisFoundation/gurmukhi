@@ -5,15 +5,15 @@ import { Form } from 'react-bootstrap';
 import Multiselect from 'multiselect-react-dropdown';
 import { useTranslation } from 'react-i18next';
 import regex from '../constants/regex';
-import { MiniWord, NewSentenceType } from '../../types';
+import { MiniWord, SentenceType } from '../../types';
 import { capitalize } from './utils';
 
 interface IProps {
   id: string;
   name: string;
-  word: MiniWord[] | NewSentenceType[];
+  word: MiniWord[] | SentenceType[];
   setWord: Dispatch<SetStateAction<any[]>>;
-  words: MiniWord[] | NewSentenceType[];
+  words: MiniWord[] | SentenceType[];
   type: string;
   placeholder: string;
 }
@@ -41,34 +41,21 @@ const SupportWord = ({
           translation: english,
           label: `${gurmukhi} - ${english.toLowerCase()}`,
         } as any;
-        let duplicate;
-        let alreadyInWords;
 
-        if (type === 'sentence') {
-          d.sentence = gurmukhi;
+        d.word = gurmukhi;
 
-          duplicate = (word as NewSentenceType[]).find(
-            (obj) => obj.sentence === d.sentence,
-          );
-          alreadyInWords = (words as NewSentenceType[]).find(
-            (obj) => obj.sentence === d.sentence,
-          );
-        } else {
-          d.word = gurmukhi;
-
-          duplicate = (word as MiniWord[]).find(
-            (obj) => obj.word === d.word,
-          );
-          alreadyInWords = (words as MiniWord[]).find(
-            (obj) => obj.word === d.word,
-          );
-        }
+        const duplicate = (word as MiniWord[]).find(
+          (obj) => obj.word === d.word,
+        );
+        const alreadyInWords = (words as MiniWord[]).find(
+          (obj) => obj.word === d.word,
+        );
 
         if (!duplicate) {
           if (!alreadyInWords) {
             setWord((prev) => [...prev, d]);
           } else {
-            alert(`${type} ${d.value} already exists, choose it from the dropdown`);
+            alert(`${name.slice(0, -1)} ${d.value} already exists, choose it from the dropdown`);
           }
         }
 

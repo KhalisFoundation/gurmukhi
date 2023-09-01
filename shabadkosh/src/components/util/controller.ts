@@ -74,6 +74,11 @@ export const reviewWord = async (
   status: string,
   updated_by: string,
 ) => {
+  console.log('word_data', word_data);
+  console.log('status', status);
+  console.log('updated_by', updated_by);
+  console.log('word', word);
+  
   const revWord = await updateDoc(word, {
     ...word_data, status, updated_at: Timestamp.now(), updated_by,
   });

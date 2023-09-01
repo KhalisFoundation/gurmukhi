@@ -1,3 +1,5 @@
+import roles from "./roles";
+
 export const STATUS = {
   CREATING_ENGLISH: 'creating-english',
   REVIEW_ENGLISH: 'review-english',
@@ -9,12 +11,22 @@ export const STATUS = {
   INACTIVE: 'inactive',
 };
 
-// status which creator role can set
+// status which creator role can view
 export const cstatus = [
   STATUS.CREATING_ENGLISH,
   STATUS.FEEDBACK_ENGLISH,
   STATUS.CREATING_PUNJABI,
   STATUS.FEEDBACK_PUNJABI,
+];
+
+// status which creator role can set
+export const cstatus2 = [
+  STATUS.CREATING_ENGLISH,
+  STATUS.REVIEW_ENGLISH,
+  STATUS.FEEDBACK_ENGLISH,
+  STATUS.CREATING_PUNJABI,
+  STATUS.REVIEW_FINAL,
+  STATUS.FEEDBACK_PUNJABI
 ];
 
 // status which reviewer role can set
@@ -47,3 +59,15 @@ export const qtypes = {
   MEANING: 'meaning',
   DEFINITION: 'definition',
 };
+
+export const createStatus = {
+  [roles.admin]: astatus,
+  [roles.reviewer]: rstatus,
+  [roles.creator]: cstatus,
+}
+
+export const editStatus = {
+  [roles.admin]: astatus,
+  [roles.reviewer]: rstatus,
+  [roles.creator]: cstatus2,
+}

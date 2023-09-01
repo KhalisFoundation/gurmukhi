@@ -34,7 +34,7 @@ import {
   wordsCollection,
 } from '../util/controller';
 import {
-  NewWordType, NewSentenceType, WordlistType, MiniWord, Option, QuestionType,
+  NewWordType, SentenceType, WordlistType, MiniWord, Option, QuestionType,
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
@@ -67,7 +67,7 @@ const WordDetail = () => {
     created_by: '',
     updated_by: '',
   });
-  const [sentences, setSentences] = useState<NewSentenceType[]>([]);
+  const [sentences, setSentences] = useState<SentenceType[]>([]);
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [wordlists, setWordlists] = useState<WordlistType[]>([]);
 

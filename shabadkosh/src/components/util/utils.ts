@@ -1,8 +1,9 @@
 import { Timestamp } from 'firebase/firestore';
 import {
-  NewSentenceType, NewWordType, QuestionType, Option, TimestampType,
+  SentenceType, NewWordType, QuestionType, Option, TimestampType,
 } from '../../types';
 import { createMultipleValsAtOnce } from './controller';
+import { qtypes } from '../constants';
 
 export const seperateIdsAndNewWords = (some: any) => {
   const uniqueList = [] as any[];
@@ -44,15 +45,12 @@ export const seperateIdsAndNewSentences = (some: any) => {
 };
 
 export const hasValidOptions = (questions: any) => {
-  let valid = true;
-  if (!questions) {
-    valid = false;
-  }
-  questions.forEach((question: any) => {
-    if (question.type !== 'meaning') {
-      question.options.forEach((ele: any) => {
-        if (!Object.keys(ele).includes('id') && ele.option) {
-          if (ele.option.includes(' ')) {
+  let valid = questions ? true : false;
+  questions.forEach((question: QuestionType) => {
+    if (question.type !== qtypes.MEANING) {
+      question.options.forEach((option: Option) => {
+        if (!Object.keys(option).includes('id') && option.option) {
+          if (option.option.includes(' ')) {
             valid = false;
           }
         }
@@ -96,7 +94,7 @@ export const createSupportWords = async (wordList: NewWordType[], user: any) => 
   return createMultipleValsAtOnce(w, 'words');
 };
 
-export const createSupportSentences = async (sentList: NewSentenceType[], user: any) => {
+export const createSupportSentences = async (sentList: SentenceType[], user: any) => {
   const s = sentList.map((item) => ({
     sentence: item.sentence,
     translation: item.translation,
@@ -123,7 +121,7 @@ export const createOptions = async (optList: any[], user: any) => {
 
 export const createWordsFromOptions = async (questions: any[], user: any) => {
   return Promise.all(questions.map(async (question: any) => {
-    if (question.type !== 'meaning') {
+    if (question.type !== qtypes.MEANING) {
       const [uniqueList, idList] = seperateIdsAndNewOptions(question.options);
       const lOptions = idList;
       return createOptions(uniqueList, user).then((res) => {
