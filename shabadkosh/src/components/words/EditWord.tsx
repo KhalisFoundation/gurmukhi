@@ -15,7 +15,7 @@ import {
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, qtypes, STATUS, cstatus, cstatus2, createStatus,
+  astatus, rstatus, qtypes, STATUS, cstatus, cstatus2,
 } from '../constants';
 import {
   getWordlistsByWordId,
@@ -339,7 +339,7 @@ const EditWord = () => {
 
   const handleApprove = async (e: any) => {
     handleSubmit(e, SUBMIT_TYPE.APPROVE);
-  }
+  };
 
   const navigate = useNavigate();
 

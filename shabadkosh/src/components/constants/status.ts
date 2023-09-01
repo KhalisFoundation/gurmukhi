@@ -1,4 +1,4 @@
-import roles from "./roles";
+import roles from './roles';
 
 export const STATUS = {
   CREATING_ENGLISH: 'creating-english',
@@ -26,7 +26,7 @@ export const cstatus2 = [
   STATUS.FEEDBACK_ENGLISH,
   STATUS.CREATING_PUNJABI,
   STATUS.REVIEW_FINAL,
-  STATUS.FEEDBACK_PUNJABI
+  STATUS.FEEDBACK_PUNJABI,
 ];
 
 // status which reviewer role can set
@@ -64,10 +64,10 @@ export const createStatus = {
   [roles.admin]: astatus,
   [roles.reviewer]: rstatus,
   [roles.creator]: cstatus,
-}
+};
 
 export const editStatus = {
   [roles.admin]: astatus,
   [roles.reviewer]: rstatus,
   [roles.creator]: cstatus2,
-}
+};

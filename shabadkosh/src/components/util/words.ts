@@ -5,7 +5,7 @@ import { DocumentData, DocumentReference, Timestamp, doc } from 'firebase/firest
 import { addQuestion, addSentence, addWord, addWordIdToWordlists, deleteQuestion, deleteSentence, updateQuestion, updateSentence, updateWord } from './controller';
 import { TFunction } from 'i18next';
 import { STATUS, qtypes } from '../constants';
-import { createSupportWords, createWordsFromOptions, seperateIdsAndNewOptions, seperateIdsAndNewWords, splitAndClear } from './utils';
+import { createSupportWords, createWordsFromOptions, seperateIdsAndNewWords, splitAndClear } from './utils';
 import SUBMIT_TYPE from '../constants/submit';
 import { User } from 'firebase/auth';
 import PARTS_OF_SPEECH from '../constants/pos';
