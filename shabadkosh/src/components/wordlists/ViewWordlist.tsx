@@ -16,6 +16,7 @@ import {
   convertTimestampToDateString,
 } from '../util';
 import { useUserAuth } from '../UserAuthContext';
+import { WordlistType } from '../../types';
 
 const ViewWordlist = () => {
   const { wlid } = useParams();
@@ -24,7 +25,7 @@ const ViewWordlist = () => {
   const { t } = useTranslation();
   const getWordlist = doc(firestore, `wordlists/${wlid}`);
 
-  const [wordlist, setWordlist] = useState<any>({
+  const [wordlist, setWordlist] = useState<WordlistType>({
   });
   const [found, setFound] = useState<boolean>(true);
   const [words, setWords] = useState<MiniWord[]>([]);
@@ -45,9 +46,9 @@ const ViewWordlist = () => {
         };
         setWordlist(newWordObj);
         const data = await getWordsByIdList(newWordObj.words);
-        const listOfWords = data?.map((ele) => ({
-          id: ele.id,
-          word: ele.data().word,
+        const listOfWords = data?.map((word) => ({
+          id: word.id,
+          word: word.data().word,
         } as MiniWord));
         setWords(listOfWords ?? []);
         setIsLoading(false);
@@ -59,20 +60,20 @@ const ViewWordlist = () => {
     fetchWordlist();
   }, []);
 
-  const wordsData = words?.map((ele) => (
-    <li key={ele.id} className="row">
+  const wordsData = words?.map((word) => (
+    <li key={word.id} className="row">
       <NavLink
         className="col-4 text-center border rounded-pill m-1"
-        href={routes.word.replace(':wordid', ele.id ?? '')}
-        key={ele.id}
+        href={routes.word.replace(':wordid', word.id ?? '')}
+        key={word.id}
       >
-        {ele.word}
+        {word.word}
       </NavLink>
     </li>
   ));
 
-  const editUrl = routes.editWordlist.replace(':wlid', wordlist.id);
-  const delWordlist = (remWordlist: any) => {
+  const editUrl = routes.editWordlist.replace(':wlid', wordlist.id ?? '');
+  const delWordlist = (remWordlist: WordlistType) => {
     const response = window.confirm(`Are you sure you want to delete this wordlist: ${remWordlist.name}? \n This action is not reversible.`);
     if (response) {
       setIsLoading(true);
@@ -163,7 +164,7 @@ const ViewWordlist = () => {
                 <h6>
                   {t('LABEL_VAL', {
                     label: t('CREATED_AT'),
-                    val: convertTimestampToDateString(wordlist.created_at, t),
+                    val: convertTimestampToDateString(wordlist.created_at ?? null, t),
                   })}
                 </h6>
                 <h6>
@@ -175,7 +176,7 @@ const ViewWordlist = () => {
                 <h6>
                   {t('LABEL_VAL', {
                     label: t('LAST_UPDATED_AT'),
-                    val: convertTimestampToDateString(wordlist.updated_at, t),
+                    val: convertTimestampToDateString(wordlist.updated_at ?? null, t),
                   })}
                 </h6>
               </div>

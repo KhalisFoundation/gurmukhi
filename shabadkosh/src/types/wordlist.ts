@@ -1,4 +1,5 @@
 import { TimestampType } from './timestamp';
+import { MiniWord } from './word';
 
 export type Metadata = {
   curriculum?: string,
@@ -16,6 +17,7 @@ export interface WordlistType {
   created_at?: TimestampType,
   updated_by?: string,
   updated_at?: TimestampType,
+  words?: string[] | MiniWord[]
 }
 
 export interface MiniWordlist {

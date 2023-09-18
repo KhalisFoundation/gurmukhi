@@ -34,13 +34,13 @@ import {
   wordsCollection,
 } from '../util/controller';
 import {
-  NewWordType, SentenceType, WordlistType, MiniWord, Option, QuestionType,
+  NewWordType, SentenceType, WordlistType, MiniWord, Option, QuestionType, WordType,
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, cstatus, STATUS,
+  astatus, rstatus, cstatus, STATUS, EmptyWord,
 } from '../constants';
-import { convertTimestampToDateString } from '../util/utils';
+import { capitalize, convertTimestampToDateString } from '../util/utils';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
 
@@ -54,19 +54,7 @@ const WordDetail = () => {
 
   const [found, setFound] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [word, setWord] = useState<NewWordType>({
-    id: '',
-    created_at: {
-      seconds: 0,
-      nanoseconds: 0,
-    },
-    updated_at: {
-      seconds: 0,
-      nanoseconds: 0,
-    },
-    created_by: '',
-    updated_by: '',
-  });
+  const [word, setWord] = useState<WordType>(EmptyWord);
   const [sentences, setSentences] = useState<SentenceType[]>([]);
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [wordlists, setWordlists] = useState<WordlistType[]>([]);
@@ -81,8 +69,8 @@ const WordDetail = () => {
   }
 
   useEffect(() => {
-    let synList = [] as any[];
-    let antList = [] as any[];
+    let synList = [] as string[] | MiniWord[];
+    let antList = [] as string[] | MiniWord[];
     let localWords = [] as NewWordType[];
 
     const fetchWords = async () => {
@@ -124,9 +112,9 @@ const WordDetail = () => {
         let listOfWordlists = [] as WordlistType[];
         await getWordlistsByWordId(wordid ?? '').then((data) => {
           if (data && data !== undefined) {
-            listOfWordlists = data.map((ele) => ({
-              id: ele.id,
-              ...ele.data(),
+            listOfWordlists = data.map((wordlist) => ({
+              id: wordlist.id,
+              ...wordlist.data(),
             } as WordlistType));
           }
         }).finally(() => {
@@ -141,7 +129,7 @@ const WordDetail = () => {
 
     const fetchSynonyms = async () => {
       setIsLoading(true);
-      await getWordsByIdList(synList).then((docs) => {
+      await getWordsByIdList(synList as string[]).then((docs) => {
         if (docs && docs !== undefined) {
           synList = docs.map((d) => ({
             id: d.id, ...d.data(),
@@ -154,7 +142,7 @@ const WordDetail = () => {
 
     const fetchAntonyms = async () => {
       setIsLoading(true);
-      await getWordsByIdList(antList).then((docs) => {
+      await getWordsByIdList(antList as string[]).then((docs) => {
         if (docs && docs !== undefined) {
           antList = docs.map((d) => ({
             id: d.id, ...d.data(),
@@ -187,24 +175,26 @@ const WordDetail = () => {
         setIsLoading(false);
       });
       if (!querySnapshot.empty) {
-        const newQuestions = querySnapshot.docs.map((docu) => {
-          const lOptions = docu.data().options.map((ele: string | Option) => {
-            if (typeof ele === 'string') {
-              const d = localWords.find((e) => e.id === ele || e.word === ele);
+        const newQuestions = querySnapshot.docs.map((question) => {
+          const optionList = question.data().options.map((option: string | Option) => {
+            if (typeof option === 'string') {
+              const words = localWords.find((localWord) => localWord.id === option || localWord.word === option);
               return {
-                id: d?.id, option: d?.word, translation: d?.translation,
+                id: words?.id,
+                option: words?.word,
+                translation: words?.translation,
               } as Option;
             }
-            return ele;
-          }).filter((ele: any) => ele !== undefined) as Option[];
+            return option;
+          }).filter((option: Option) => option !== undefined) as Option[];
           return {
-            ...docu.data(),
-            id: docu.id,
-            question: docu.data().question,
-            translation: docu.data().translation ?? '',
-            type: docu.data().type,
-            options: lOptions,
-            answer: docu.data().answer,
+            ...question.data(),
+            id: question.id,
+            question: question.data().question,
+            translation: question.data().translation ?? '',
+            type: question.data().type,
+            options: optionList,
+            answer: question.data().answer,
           };
         });
         setQuestions(newQuestions);
@@ -216,7 +206,7 @@ const WordDetail = () => {
         fetchSynonyms().then(() => {
           fetchAntonyms().then(() => {
             setWord((prev) => ({
-              ...prev, synonyms: synList, antonyms: antList,
+              ...prev, synonyms: synList as MiniWord[], antonyms: antList as MiniWord[],
             }));
             fetchSentence();
             fetchQuestions();
@@ -227,7 +217,7 @@ const WordDetail = () => {
   }, []);
 
   const editUrl = routes.editWord.replace(':wordid', wordid ?? '');
-  const delWord = (deleted_word: any) => {
+  const delWord = (deleted_word: WordType) => {
     const response = window.confirm(`Are you sure you want to delete this word: ${deleted_word.word}?\nThis action will delete all sentences and questions for this word as well. \n This action is not reversible!`);
     if (response) {
       const getDelWord = doc(firestore, `words/${deleted_word.id}`);
@@ -283,23 +273,23 @@ const WordDetail = () => {
     }
   };
 
-  const onError = (e: any) => {
-    e.target.parentElement.style.display = 'none';
+  const onError = (event: any) => {
+    event.target.parentElement.style.display = 'none';
   };
 
-  const wordlistData = wordlists?.map((ele: any) => (
-    <li key={ele.id} className="row">
+  const wordlistData = wordlists?.map((wordlist: WordlistType) => (
+    <li key={wordlist.id} className="row">
       <NavLink
         className="col-4 text-center border rounded-pill m-1"
-        href={routes.wordlist.replace(':wlid', ele.id)}
-        key={ele.id}
+        href={routes.wordlist.replace(':wlid', wordlist.id ?? '')}
+        key={wordlist.id}
       >
-        {ele.name}
+        {wordlist.name}
       </NavLink>
     </li>
   ));
 
-  const supportList = (supportWord: any) => (supportWord && supportWord.length ? (
+  const supportList = (supportWord: MiniWord[]) => (supportWord && supportWord.length ? (
     <span className="d-inline-flex">
       {(supportWord as MiniWord[]).map((synonym) => (
         <NavLink
@@ -394,17 +384,17 @@ const WordDetail = () => {
           <br />
           <h5><b>{t('SYNONYMS')}</b></h5>
           <div className="d-flex">
-            {supportList(word.synonyms)}
+            {supportList(word.synonyms as MiniWord[])}
           </div>
 
           <br />
           <h5><b>{t('ANTONYMS')}</b></h5>
           <div className="d-flex">
-            {supportList(word.antonyms)}
+            {supportList(word.antonyms as MiniWord[])}
           </div>
 
           <br />
-          <h5><b>{t('SENTENCES')}</b></h5>
+          <h5><b>{capitalize(t('SENTENCES'))}</b></h5>
           <ListGroup>
             {sentences && sentences.length ? (
               sentences.map((sentence) => (
@@ -413,11 +403,11 @@ const WordDetail = () => {
                   <h6>{sentence.translation}</h6>
                 </ListGroup.Item>
               ))
-            ) : t('NO_TEXT', { for: t('SENTENCES') })}
+            ) : t('NO_TEXT', { for: capitalize(t('SENTENCES')) })}
           </ListGroup>
 
           <br />
-          <h5><b>{t('QUESTIONS')}</b></h5>
+          <h5><b>{capitalize(t('QUESTIONS'))}</b></h5>
           <ListGroup>
             {questions && questions.length ? (
               questions.map((question, qid) => (
@@ -438,7 +428,7 @@ const WordDetail = () => {
                     {t('OPTIONS')}
                     :
                     <ul>
-                      {question.options?.map((ele, idx) => <li key={`qoption${qid}${idx}`}>{ele.option}</li>)}
+                      {question.options?.map((option, optionId) => <li key={`qoption${qid}${optionId}`}>{option.option}</li>)}
                     </ul>
                   </h6>
                   <h6>
@@ -456,7 +446,7 @@ const WordDetail = () => {
                   </h6>
                 </ListGroup.Item>
               ))
-            ) : t('NO_TEXT', { for: t('QUESTIONS') })}
+            ) : t('NO_TEXT', { for: capitalize(t('QUESTIONS')) })}
           </ListGroup>
 
           <br />

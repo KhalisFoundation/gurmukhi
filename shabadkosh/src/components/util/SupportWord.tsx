@@ -5,14 +5,14 @@ import { Form } from 'react-bootstrap';
 import Multiselect from 'multiselect-react-dropdown';
 import { useTranslation } from 'react-i18next';
 import regex from '../constants/regex';
-import { MiniWord, SentenceType } from '../../types';
+import { MiniWord, Option, SentenceType } from '../../types';
 import { capitalize } from './utils';
 
 interface IProps {
   id: string;
   name: string;
   word: MiniWord[] | SentenceType[];
-  setWord: Dispatch<SetStateAction<any[]>>;
+  setWord: Dispatch<SetStateAction<(MiniWord | SentenceType)[]>>;
   words: MiniWord[] | SentenceType[];
   type: string;
   placeholder: string;
@@ -26,36 +26,36 @@ const SupportWord = ({
   const [translation, setTranslation] = useState<string>('');
   const { t } = useTranslation();
 
-  const onViewToggle = (e: any) => {
-    e.preventDefault();
+  const onViewToggle = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    event.preventDefault();
     setShowNewForm(!showNewForm);
   };
 
-  const addNew = (e: any, option: string) => {
-    e.preventDefault();
+  const addNew = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, option: string) => {
+    event.preventDefault();
     if (option.includes(':')) {
       const [gurmukhi, english] = option.split(':').map((val) => val.trim());
       if (gurmukhi.match(regex.gurmukhiWordRegex) && english.match(regex.englishQuestionRegex)) {
-        const d = {
+        const optionData = {
           value: gurmukhi,
           translation: english,
           label: `${gurmukhi} - ${english.toLowerCase()}`,
-        } as any;
+        } as Option;
 
-        d.word = gurmukhi;
+        optionData.word = gurmukhi;
 
         const duplicate = (word as MiniWord[]).find(
-          (obj) => obj.word === d.word,
+          (obj) => obj.word === optionData.word,
         );
         const alreadyInWords = (words as MiniWord[]).find(
-          (obj) => obj.word === d.word,
+          (obj) => obj.word === optionData.word,
         );
 
         if (!duplicate) {
           if (!alreadyInWords) {
-            setWord((prev) => [...prev, d]);
+            setWord((prev) => [...prev, optionData]);
           } else {
-            alert(`${name.slice(0, -1)} ${d.value} already exists, choose it from the dropdown`);
+            alert(`${name.slice(0, -1)} ${optionData.value} already exists, choose it from the dropdown`);
           }
         }
 
@@ -67,8 +67,8 @@ const SupportWord = ({
     }
   };
 
-  const remWord = (e: any) => {
-    e.preventDefault();
+  const remWord = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    event.preventDefault();
     setSupportWord('');
     setTranslation('');
   };
@@ -83,9 +83,9 @@ const SupportWord = ({
       <button
         type="button"
         className="btn btn-sm"
-        onClick={(e) => onViewToggle(e)}
+        onClick={onViewToggle}
       >
-        {showNewForm ? '➖' : '➕'}
+        {showNewForm ? t('MINUS') : t('PLUS')}
       </button>
 
       <Multiselect
@@ -103,24 +103,24 @@ const SupportWord = ({
       >
         <div>
           {['synonyms', 'antonyms'].includes(type) ? t('WORD') : capitalize(type)}
-          <Form.Control type="text" placeholder={placeholder} pattern={regex.gurmukhiWordRegex} value={supportWord} onChange={(e) => setSupportWord(e.target.value)} />
+          <Form.Control type="text" placeholder={placeholder} pattern={regex.gurmukhiWordRegex} value={supportWord} onChange={(event) => setSupportWord(event.target.value)} />
         </div>
         <div>
           {t('TRANSLATION')}
-          <Form.Control type="text" placeholder="Enter translation" pattern={regex.englishSentenceRegex} value={translation} onChange={(e) => setTranslation(e.target.value)} />
+          <Form.Control type="text" placeholder="Enter translation" pattern={regex.englishSentenceRegex} value={translation} onChange={(event) => setTranslation(event.target.value)} />
         </div>
         <div>
           <button
             type="button"
             className="btn btn-sm fs-5 me-2 p-0"
-            onClick={(e) => addNew(e, `${supportWord}:${translation}`)}
+            onClick={(event) => addNew(event, `${supportWord}:${translation}`)}
           >
             {t('CHECK')}
           </button>
           <button
             type="button"
             className="btn btn-sm fs-5 ms-2 p-0"
-            onClick={(e) => remWord(e)}
+            onClick={remWord}
           >
             {t('CROSS')}
           </button>

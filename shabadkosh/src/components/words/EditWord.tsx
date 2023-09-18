@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useState } from 'react';
+/* eslint-disable @typescript-eslint/indent */
+import React, { FormEvent, useEffect, useState } from 'react';
 import {
   Card, Button, Form,
 } from 'react-bootstrap';
@@ -15,7 +16,7 @@ import {
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, qtypes, STATUS, cstatus, cstatus2,
+  astatus, rstatus, qtypes, STATUS, cstatus, cstatus2, DATATYPES,
 } from '../constants';
 import {
   getWordlistsByWordId,
@@ -43,8 +44,7 @@ import {
   changeQuestion,
   changeSentence,
   createWordData,
-  removeQuestion,
-  removeSentence,
+  removeData,
   saveWord,
 } from '../util/words';
 
@@ -69,8 +69,7 @@ const EditWord = () => {
     created_by: '',
     updated_by: '',
   });
-  const [formValues, setFormValues] = useState({
-  } as any);
+  const [formValues, setFormValues] = useState({} as any);
   const [sentences, setSentences] = useState<SentenceType[]>([]);
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [words, setWords] = useState<MiniWord[]>([]);
@@ -98,38 +97,37 @@ const EditWord = () => {
   }
 
   useEffect(() => {
-    let localWlist = [] as any;
-    let localWords = [] as any;
-    let localWordlists = [] as any;
+    let localWordlist = [] as WordlistType[];
+    let allWords = [] as MiniWord[];
+    let allWordlists = [] as WordlistType[];
 
     const fetchWords = async () => {
       setIsLoading(true);
       onSnapshot(wordsCollection, (snapshot: QuerySnapshot<DocumentData>) => {
-        localWords = snapshot.docs.map((wordDoc) => ({
+        allWords = snapshot.docs.map((wordDoc) => ({
           id: wordDoc.id,
           word: wordDoc.data().word,
           translation: wordDoc.data().translation,
           value: wordDoc.id,
           label: `${wordDoc.data().word} (${wordDoc.data().translation.toLowerCase()})`,
         } as MiniWord));
-        setWords(localWords);
+        setWords(allWords);
       });
 
       onSnapshot(wordlistsCollection, (snapshot:
       QuerySnapshot<DocumentData>) => {
-        localWordlists = snapshot.docs.map((wlDoc) => ({
+        allWordlists = snapshot.docs.map((wlDoc) => ({
           id: wlDoc.id,
           ...wlDoc.data(),
         }));
-        setWordlists(localWordlists);
+        setWordlists(allWordlists);
       });
 
       setIsLoading(false);
     };
 
     const fillFormValues = (wordElement: any) => {
-      const formVal = {
-      } as any;
+      const formVal = {} as any;
       Object.keys(wordElement).forEach((key) => {
         formVal[key] = wordElement[key];
         (document.getElementById(key) as HTMLInputElement)?.setAttribute('value', wordElement[key]);
@@ -152,21 +150,21 @@ const EditWord = () => {
           is_for_support: docSnap.data().is_for_support ?? false,
           ...docSnap.data(),
         };
-        await getWordlistsByWordId(wordId ?? '').then((data) => {
-          data.forEach((ele) => {
-            localWlist = [...localWlist, {
-              id: ele.id,
-              name: ele.data().name,
+        await getWordlistsByWordId(wordId ?? '').then((wordLists) => {
+          wordLists.forEach((wordlist) => {
+            localWordlist = [...localWordlist, {
+              id: wordlist.id,
+              name: wordlist.data().name,
             }];
           });
         });
         setWord(newWordObj);
-        const synList = localWords.filter((obj: MiniWord) => newWordObj.synonyms.includes(obj.id));
-        const antList = localWords.filter((obj: MiniWord) => newWordObj.antonyms.includes(obj.id));
+        const synList = allWords.filter((obj: MiniWord) => newWordObj.synonyms.includes(obj.id));
+        const antList = allWords.filter((obj: MiniWord) => newWordObj.antonyms.includes(obj.id));
         setSynonyms(synList);
         setAntonyms(antList);
         setSupport(newWordObj.is_for_support);
-        setSelectedWordlists(localWlist);
+        setSelectedWordlists(localWordlist);
         fillFormValues(newWordObj);
       } else {
         setFound(false);
@@ -194,28 +192,28 @@ const EditWord = () => {
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         const newQuestions = querySnapshot.docs.map((quesDoc) => {
-          const opt = quesDoc.data().options.map((ele: any) => {
-            if (typeof ele === 'string') {
-              const d = localWords.find((obj: MiniWord) => obj.word === ele || obj.id === ele);
-              if (d) {
+          const options = quesDoc.data().options.map((option: Option | string) => {
+            if (typeof option === 'string') {
+              const foundWord = allWords.find((localWord: MiniWord) => localWord.word === option || localWord.id === option);
+              if (foundWord) {
                 return {
-                  id: d.id,
-                  option: d.word,
-                  translation: d.translation,
-                  label: `${d.word} (${d.translation.toLowerCase()})`,
+                  id: foundWord.id,
+                  option: foundWord.word,
+                  translation: foundWord.translation,
+                  label: `${foundWord.word} (${(foundWord.translation ?? '').toLowerCase()})`,
                 };
               }
               return undefined;
             }
-            return ele;
-          }).filter((ele: any) => ele !== undefined);
+            return option;
+          }).filter((option: Option) => option !== undefined);
           return {
             ...quesDoc.data(),
             id: quesDoc.id,
             question: quesDoc.data().question,
             translation: quesDoc.data().translation ?? '',
             type: quesDoc.data().type,
-            options: opt,
+            options: options,
             answer: quesDoc.data().answer,
           };
         });
@@ -230,35 +228,39 @@ const EditWord = () => {
     });
   }, []);
 
-  const onSelect = (selectedList: [], selectedItem: any) => {
+  const onSelect = (selectedList: [], selectedItem: WordlistType) => {
     if (removedWordlists.includes(selectedItem)) {
-      const updatedRem = removedWordlists.filter((ele) => ele !== selectedItem);
+      const updatedRem = removedWordlists.filter((wordlist) => wordlist !== selectedItem);
       setRemovedWordlists(updatedRem);
     }
     setSelectedWordlists(selectedList);
   };
 
-  const onRemove = (selectedList: [], removedItem: any) => {
+  const onRemove = (selectedList: [], removedItem: WordlistType) => {
     setSelectedWordlists(selectedList);
     const newRem = [...removedWordlists, removedItem];
     setRemovedWordlists(newRem);
   };
 
-
-  const changeQOptions = (id: string, optionData: any, type = '') => {
-    const typo = (type as any)?.value;
+  // change optionData to Option[]
+  const changeQOptions = (id: string, optionData: Option[], type = '') => {
     // event.preventDefault()
-    const updatedQuestions = questions.map((question, qidx) => {
-      if (parseInt(id.split('options')[1], 10) !== qidx) {
-        return question;
-      }
-      if (optionData[optionData.length - 1].option && optionData[optionData.length - 1].option.includes(' ') && typo !== qtypes.MEANING) {
+    const questionType = (type as any)?.value;
+    const updatedQuestions = questions.map((question, questionId) => {
+      const lastOption = optionData[optionData.length - 1];
+      if (lastOption.option && lastOption.option.includes(' ') && questionType !== qtypes.MEANING) {
         alert(t('OPTION_NO_SPACES'));
         return question;
       }
-      return {
-        ...question, options: optionData,
-      };
+      switch (id) {
+      case `options${questionId}`:
+        return {
+          ...question,
+          options: optionData,
+        };
+      default:
+        return question;
+      }
     });
     setQuestions(updatedQuestions);
   };
@@ -269,15 +271,15 @@ const EditWord = () => {
     setValidated(false);
   };
 
-  const handleChange = (e: any) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormValues({
-      ...formValues, [e.target.id]: e.target.value,
+      ...formValues, [event.target.id]: event.target.value,
     });
   };
 
-  const handleSupport = (e: any) => {
-    e.persist();
-    setSupport(e.target.checked);
+  const handleSupport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.persist();
+    setSupport(event.target.checked);
   };
 
   const editWord = async (formData: any) => {
@@ -289,25 +291,25 @@ const EditWord = () => {
     setSubmitted(true);
   };
 
-  const handleSubmit = async (e: any, type: string = SUBMIT_TYPE.CREATE) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement | HTMLButtonElement>, type: string = SUBMIT_TYPE.CREATE) => {
+    event.preventDefault();
+    event.stopPropagation();
     setIsLoading(true);
 
-    const form = type === SUBMIT_TYPE.APPROVE ? e.target.form : e.currentTarget;
+    const form = type === SUBMIT_TYPE.APPROVE ? (event.target as HTMLFormElement).form : event.currentTarget;
     if (form.checkValidity() === false) {
       setValidated(true);
       setIsLoading(false);
       return;
     }
 
-    const formData = {
-    } as any;
-    Object.keys(formValues).forEach((ele) => {
-      if (!ele.match(/sentence\d+/) && !ele.match(/translation\d+/) && !ele.match(/question\d+/) && !ele.match(/qtranslation\d+/) && !ele.match(/type\d+/) && !ele.match(/options\d+/) && !ele.match(/answer\d+/)) {
-        formData[ele] = formValues[ele];
+    const formData = {} as any;
+    Object.keys(formValues).forEach((formId) => {
+      if (!formId.match(/sentence\d+/) && !formId.match(/translation\d+/) && !formId.match(/question\d+/) && !formId.match(/qtranslation\d+/) && !formId.match(/type\d+/) && !formId.match(/options\d+/) && !formId.match(/answer\d+/)) {
+        formData[formId] = formValues[formId];
       }
     });
+    formData.translation = formData.translation.toLowerCase();
 
     if (synonyms.includes(formData.word) || antonyms.includes(formData.word)) {
       alert(t('WORD_CANNOT_BE_OWN'));
@@ -337,9 +339,8 @@ const EditWord = () => {
     }
   };
 
-  const handleApprove = async (e: any) => {
-    handleSubmit(e, SUBMIT_TYPE.APPROVE);
-  };
+  const handleApprove = async (event: FormEvent<HTMLButtonElement>) => 
+    handleSubmit(event, SUBMIT_TYPE.APPROVE);
 
   const navigate = useNavigate();
 
@@ -389,8 +390,8 @@ const EditWord = () => {
         <Form.Group className="mb-3" controlId="part_of_speech" onChange={handleChange}>
           <Form.Label>{t('PART_OF_SPEECH')}</Form.Label>
           <Form.Select aria-label="Choose part of speech" defaultValue={word.part_of_speech ?? PARTS_OF_SPEECH.NOUN}>
-            {Object.values(PARTS_OF_SPEECH).map((ele) => (
-              <option key={ele} value={ele}>{capitalize(ele)}</option>
+            {Object.values(PARTS_OF_SPEECH).map((partOfSpeech) => (
+              <option key={partOfSpeech} value={partOfSpeech}>{capitalize(partOfSpeech)}</option>
             ))}
           </Form.Select>
         </Form.Group>
@@ -424,33 +425,33 @@ const EditWord = () => {
           <Form.Label
             className="d-flex flex-row align-items-center justify-content-between w-100"
           >
-            <h5>{t('SENTENCES')}</h5>
+            <h5>{capitalize(t('SENTENCES'))}</h5>
             <div
               className="d-flex align-items-center"
             >
               <button type="button" className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{t('PLUS')}</button>
             </div>
           </Form.Label>
-          {sentences && sentences.length ? sentences.map((sentence, idx) => (
+          {sentences && sentences.length ? sentences.map((sentence, sentenceId) => (
             <div
-              key={idx}
+              key={sentenceId}
               className="d-flex flex-column justify-content-between mb-3"
             >
               <div className="d-flex justify-content-between align-items-center">
-                <b>{t('SENTENCE_WITH_NUM', { num: idx + 1 })}</b>
-                <button type="button" className="btn btn-sm" onClick={(e) => removeSentence(idx, e, t, sentences, setSentences, formValues, setFormValues, 'edit', word.word)}>{t('BIN')}</button>
+                <b>{t('SENTENCE_WITH_NUM', { num: sentenceId + 1 })}</b>
+                <button type="button" className="btn btn-sm" onClick={(e) => removeData(sentenceId, e, t, sentences, setSentences, SUBMIT_TYPE.EDIT, DATATYPES.SENTENCE, word.word)}>{t('BIN')}</button>
               </div>
               <div>
                 {t('SENTENCE')}
-                <Form.Control id={`sentence${idx}`} className="m-1" type="text" value={sentence.sentence} placeholder="ਇੱਥੇ ਵਾਕ ਦਰਜ ਕਰੋ" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.gurmukhiSentenceRegex} />
-                <Form.Control.Feedback type="invalid" itemID={`sentence${idx}`}>
+                <Form.Control id={`sentence${sentenceId}`} className="m-1" type="text" value={sentence.sentence} placeholder="ਇੱਥੇ ਵਾਕ ਦਰਜ ਕਰੋ" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.gurmukhiSentenceRegex} />
+                <Form.Control.Feedback type="invalid" itemID={`sentence${sentenceId}`}>
                   {t('FEEDBACK_GURMUKHI', { for: 'sentence' })}
                 </Form.Control.Feedback>
                 <br />
 
                 {t('TRANSLATION')}
-                <Form.Control id={`translation${idx}`} className="m-1" type="text" value={sentence.translation} placeholder="Enter translation" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.translationRegex} required />
-                <Form.Control.Feedback type="invalid" itemID={`translation${idx}`}>
+                <Form.Control id={`translation${sentenceId}`} className="m-1" type="text" value={sentence.translation} placeholder="Enter translation" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.translationRegex} required />
+                <Form.Control.Feedback type="invalid" itemID={`translation${sentenceId}`}>
                   {t('FEEDBACK_ENGLISH', { for: 'translation' })}
                 </Form.Control.Feedback>
               </div>
@@ -464,7 +465,7 @@ const EditWord = () => {
           <Form.Label
             className="d-flex flex-row align-items-center justify-content-between w-100"
           >
-            <h5>{t('QUESTIONS')}</h5>
+            <h5>{capitalize(t('QUESTIONS'))}</h5>
             <div
               className="d-flex align-items-center"
             >
@@ -477,55 +478,55 @@ const EditWord = () => {
               </button>
             </div>
           </Form.Label>
-          {questions && questions.length ? questions.map((question, idx) => (
+          {questions && questions.length ? questions.map((question, questionId) => (
             <div
-              key={idx}
+              key={questionId}
               className="d-flex flex-column justify-content-between"
             >
               <div className="d-flex justify-content-between align-items-center">
-                <b>{t('QUESTION_WITH_NUM', { num: idx + 1 })}</b>
+                <b>{t('QUESTION_WITH_NUM', { num: questionId + 1 })}</b>
                 <button
                   type="button"
                   className="btn btn-sm"
-                  onClick={(e) => removeQuestion(idx, e, t, questions, setQuestions, formValues, setFormValues, 'edit', word.word)}
+                  onClick={(e) => removeData(questionId, e, t, questions, setQuestions, SUBMIT_TYPE.EDIT, DATATYPES.QUESTION, word.word)}
                 >
                   {t('BIN')}
                 </button>
               </div>
               <div>
                 <Form.Label>{t('QUESTION')}</Form.Label>
-                <Form.Control id={`question${idx}`} className="m-1" type="text" value={question.question} placeholder="ਇੱਥੇ ਸਵਾਲ ਦਰਜ ਕਰੋ" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.gurmukhiQuestionRegex} required />
-                <Form.Control.Feedback type="invalid" itemID={`question${idx}`}>
+                <Form.Control id={`question${questionId}`} className="m-1" type="text" value={question.question} placeholder="ਇੱਥੇ ਸਵਾਲ ਦਰਜ ਕਰੋ" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.gurmukhiQuestionRegex} required />
+                <Form.Control.Feedback type="invalid" itemID={`question${questionId}`}>
                   {t('FEEDBACK_GURMUKHI', { for: 'question' })}
                 </Form.Control.Feedback>
                 <br />
 
                 <Form.Label>{t('TRANSLATION')}</Form.Label>
-                <Form.Control id={`qtranslation${idx}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.englishQuestionTranslationRegex} />
-                <Form.Control.Feedback type="invalid" itemID={`qtranslation${idx}`}>
+                <Form.Control id={`qtranslation${questionId}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.englishQuestionTranslationRegex} />
+                <Form.Control.Feedback type="invalid" itemID={`qtranslation${questionId}`}>
                   {t('FEEDBACK_ENGLISH', { for: 'translation' })}
                 </Form.Control.Feedback>
                 <br />
 
                 <Form.Label>{t('TYPE')}</Form.Label>
-                <Form.Select aria-label="Default select example" id={`type${idx}`} value={question.type ?? 'context'} onChange={(e) => changeQuestion(e, questions, setQuestions)}>
-                  {Object.values(qtypes).map((ele) => (
-                    <option key={ele} value={ele}>{ele}</option>
+                <Form.Select aria-label="Default select example" id={`type${questionId}`} value={question.type ?? 'context'} onChange={(e) => changeQuestion(e, questions, setQuestions)}>
+                  {Object.values(qtypes).map((questionType) => (
+                    <option key={questionType} value={questionType}>{questionType}</option>
                   ))}
                 </Form.Select>
 
-                <Options id={`options${idx}`} name="Options" word={question.options as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${idx}`) as any)} />
-                <Form.Control.Feedback type="invalid" itemID={`options${idx}`}>
+                <Options id={`options${questionId}`} name="Options" word={question.options as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${questionId}`) as HTMLSelectElement).value} />
+                <Form.Control.Feedback type="invalid" itemID={`options${questionId}`}>
                   {t('FEEDBACK', { for: 'options' })}
                 </Form.Control.Feedback>
 
                 <Form.Label>{t('ANSWER')}</Form.Label>
-                <Form.Select id={`answer${idx}`} value={question.answer} onChange={(e) => changeQuestion(e, questions, setQuestions)} required>
-                  {(question.options as Option[]).map((ele, i) => (
-                    <option key={`${ele.option}${i}`} value={i}>{ele.option}</option>
+                <Form.Select id={`answer${questionId}`} value={question.answer} onChange={(e) => changeQuestion(e, questions, setQuestions)} required>
+                  {(question.options as Option[]).map((option, optionId) => (
+                    <option key={`${option.option}${optionId}`} value={optionId}>{option.option}</option>
                   ))}
                 </Form.Select>
-                <Form.Control.Feedback type="invalid" itemID={`answer${idx}`}>
+                <Form.Control.Feedback type="invalid" itemID={`answer${questionId}`}>
                   {t('FEEDBACK', { for: 'answer' })}
                 </Form.Control.Feedback>
               </div>
@@ -544,13 +545,13 @@ const EditWord = () => {
           <Form.Group className="mb-3" controlId="status" onChange={handleChange}>
             <Form.Label>{t('STATUS')}</Form.Label>
             <Form.Select aria-label="Default select example">
-              {statuses.map((ele) => {
-                const value = splitAndCapitalize(ele);
+              {statuses.map((status) => {
+                const value = splitAndCapitalize(status);
                 return (
                   <option
-                    key={ele + value.toString()}
-                    value={ele}
-                    selected={ele === word.status}
+                    key={status + value.toString()}
+                    value={status}
+                    selected={status === word.status}
                   >
                     {value}
                   </option>

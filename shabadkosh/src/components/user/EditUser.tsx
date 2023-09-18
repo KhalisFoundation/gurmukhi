@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Form, Alert, Card, Button,
@@ -13,13 +13,15 @@ import roles from '../constants/roles';
 import routes from '../constants/routes';
 import { useUserAuth } from '../UserAuthContext';
 import { updateUser, capitalize } from '../util';
+import { NewUserType } from '../../types';
+import { UserProfile } from 'firebase/auth';
 
 const EditUser = () => {
   const { uid } = useParams();
   const getUser = doc(firestore, `users/${uid}`);
 
-  const [localUser, setLocalUser] = useState({} as any);
-  const [formValues, setFormValues] = useState({} as any);
+  const [localUser, setLocalUser] = useState({} as NewUserType);
+  const [formValues, setFormValues] = useState({} as UserProfile);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [found, setFound] = useState<boolean>(true);
@@ -30,12 +32,12 @@ const EditUser = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const fillFormValues = (word: any) => {
+  const fillFormValues = (formData: any) => {
     const formVal = {
-    } as any;
-    Object.keys(word).forEach((key) => {
-      formVal[key] = word[key];
-      (document.getElementById(key) as HTMLInputElement)?.setAttribute('value', word[key]);
+    } as UserProfile;
+    Object.keys(formData).forEach((key) => {
+      formVal[key] = formData[key];
+      (document.getElementById(key) as HTMLInputElement)?.setAttribute('value', formData[key]);
     });
     setFormValues(formVal);
   };
@@ -52,7 +54,7 @@ const EditUser = () => {
           updated_at: docSnap.data().updated_at ?? Timestamp.now(),
           updated_by: docSnap.data().updated_by ?? '',
           ...docSnap.data(),
-        };
+        } as NewUserType;
         setLocalUser(newUserObj);
         fillFormValues(newUserObj);
         setIsLoading(false);
@@ -64,9 +66,9 @@ const EditUser = () => {
     fetchUser();
   }, []);
 
-  const handleChange = (e: any) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormValues({
-      ...formValues, [e.target.id]: e.target.value,
+      ...formValues, [event.target.id]: event.target.value,
     });
   };
 
@@ -74,13 +76,13 @@ const EditUser = () => {
     setValidated(false);
   };
 
-  const editUser = (formData: any) => {
+  const editUser = (formData: UserProfile) => {
     setIsLoading(true);
 
     updateUser(
       getUser,
       {
-        displayName: formData.name,
+        displayName: formData.name ?? formData.displayName,
         email: formData.email,
         role: formData.role,
         created_at: formValues.created_at ?? localUser.created_at,
@@ -96,16 +98,17 @@ const EditUser = () => {
     setSubmitted(true);
   };
 
-  const handleSubmit = async (e : any) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleSubmit = async (event : FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
     setError('');
 
-    const form = e.currentTarget;
+    const form = event.currentTarget;
     if (form.checkValidity() === false) {
       setValidated(true);
       return;
     }
+    console.log(formValues);
     editUser(formValues);
   };
 
@@ -137,10 +140,10 @@ const EditUser = () => {
           <Form.Group className="mb-3" controlId="role" onChange={handleChange}>
             <Form.Label>{t('ROLE')}</Form.Label>
             <Form.Select aria-label="Default select example" defaultValue={localUser.role}>
-              {Object.entries(roles).map((ele) => {
-                const [key, value] = ele;
+              {Object.entries(roles).map((role) => {
+                const [roleId, value] = role;
                 return (
-                  <option key={key} value={key}>{capitalize(value)}</option>
+                  <option key={roleId} value={roleId}>{capitalize(value)}</option>
                 );
               })}
             </Form.Select>

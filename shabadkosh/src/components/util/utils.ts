@@ -1,50 +1,52 @@
 import { Timestamp } from 'firebase/firestore';
 import {
-  SentenceType, NewWordType, QuestionType, Option, TimestampType,
+  SentenceType, QuestionType, Option, TimestampType, MiniWord,
 } from '../../types';
 import { createMultipleValsAtOnce } from './controller';
 import { qtypes } from '../constants';
+import { User } from 'firebase/auth';
+import { TFunction } from 'i18next';
 
-export const seperateIdsAndNewWords = (some: any) => {
-  const uniqueList = [] as any[];
-  const idList = [] as string[];
-  some.forEach((item: any) => {
-    const duplicate = uniqueList.find(
-      (obj) => obj.word === item.word,
+export const seperateIdsAndNewWords = (words: MiniWord[]): [MiniWord[], string[]] => {
+  const newWordsList = [] as MiniWord[];
+  const wordsIdList = [] as string[];
+  words.forEach((word: MiniWord) => {
+    const duplicate = newWordsList.find(
+      (obj) => obj.word === word.word,
     );
     if (!duplicate) {
-      if (Object.keys(item).includes('id') && item.id) {
-        idList.push(item.id);
+      if (Object.keys(word).includes('id') && word.id) {
+        wordsIdList.push(word.id);
       } else {
-        uniqueList.push(item);
+        newWordsList.push(word);
       }
     }
   });
-  return [uniqueList, idList];
+  return [newWordsList, wordsIdList];
 };
 
-export const seperateIdsAndNewSentences = (some: any) => {
-  const uniqueList = [] as any[];
-  const idList = [] as string[];
-  some.forEach((item: any) => {
-    const duplicate = uniqueList.find(
-      (obj) => obj.sentence === item.sentence,
+export const seperateIdsAndNewSentences = (sentences: SentenceType[]): [SentenceType[], string[]] => {
+  const newSentencesList = [] as SentenceType[];
+  const sentencesIdList = [] as string[];
+  sentences.forEach((sentence: SentenceType) => {
+    const duplicate = newSentencesList.find(
+      (obj) => obj.sentence === sentence.sentence,
     );
     if (!duplicate) {
-      if (Object.keys(item).includes('id') && item.id) {
-        idList.push(item.id);
+      if (Object.keys(sentence).includes('id') && sentence.id) {
+        sentencesIdList.push(sentence.id);
       } else {
-        uniqueList.push({
-          sentence: item.sentence,
-          translation: item.translation,
+        newSentencesList.push({
+          sentence: sentence.sentence,
+          translation: sentence.translation,
         });
       }
     }
   });
-  return [uniqueList, idList];
+  return [newSentencesList, sentencesIdList];
 };
 
-export const hasValidOptions = (questions: any) => {
+export const hasValidOptions = (questions: QuestionType[]): boolean => {
   let valid = questions ? true : false;
   questions.forEach((question: QuestionType) => {
     if (question.type !== qtypes.MEANING) {
@@ -60,102 +62,88 @@ export const hasValidOptions = (questions: any) => {
   return valid;
 };
 
-export const seperateIdsAndNewOptions = (some: any) => {
-  const uniqueList = [] as any[];
-  const idList = [] as string[];
-  some.forEach((item: any) => {
-    const duplicate = uniqueList.find(
-      (obj) => obj.option === item.option,
+export const seperateIdsAndNewOptions = (options: Option[]): [Option[], string[]] => {
+  const newOptionsList = [] as Option[];
+  const optionIdsList = [] as string[];
+  options.forEach((option: Option) => {
+    const duplicate = newOptionsList.find(
+      (obj) => obj.option === option.option,
     );
     if (!duplicate) {
-      if (typeof item === 'string') {
-        idList.push(item);
+      if (typeof option === 'string') {
+        optionIdsList.push(option);
       } else {
-        uniqueList.push({
-          option: item.option,
-          translation: item.translation,
-        });
+        newOptionsList.push({
+          option: option.option,
+          translation: option.translation,
+        } as Option);
       }
     }
   });
-  return [uniqueList, idList];
+  return [newOptionsList, optionIdsList];
 };
 
-export const createSupportWords = async (wordList: NewWordType[], user: any) => {
-  const w = wordList.map((ele) => ({
-    word: ele.word,
-    translation: ele.translation,
+export const createSupportWords = async (wordsList: MiniWord[], user: User) => {
+  const newWordsList = wordsList.map((word) => ({
+    word: word.word,
+    translation: word.translation,
     is_for_support: true,
     created_by: user.email,
     created_at: Timestamp.now(),
     updated_by: user.email,
     updated_at: Timestamp.now(),
   }));
-  return createMultipleValsAtOnce(w, 'words');
+  return createMultipleValsAtOnce(newWordsList, 'words');
 };
 
-export const createSupportSentences = async (sentList: SentenceType[], user: any) => {
-  const s = sentList.map((item) => ({
-    sentence: item.sentence,
-    translation: item.translation,
-    created_by: user.email,
-    created_at: Timestamp.now(),
-    updated_by: user.email,
-    updated_at: Timestamp.now(),
-  }));
-  return createMultipleValsAtOnce(s, 'sentences');
-};
-
-export const createOptions = async (optList: any[], user: any) => {
-  const o = optList.map((item) => ({
-    word: item.option,
-    translation: item.translation,
+export const createOptions = async (optionsList: Option[], user: User) => {
+  const options = optionsList.map((option) => ({
+    word: option.option,
+    translation: option.translation,
     is_for_support: true,
     created_by: user.email,
     created_at: Timestamp.now(),
     updated_by: user.email,
     updated_at: Timestamp.now(),
   }));
-  return createMultipleValsAtOnce(o, 'words');
+  return createMultipleValsAtOnce(options, 'words');
 };
 
-export const createWordsFromOptions = async (questions: any[], user: any) => {
-  return Promise.all(questions.map(async (question: any) => {
+export const createWordsFromOptions = async (questions: QuestionType[], user: User) => {
+  return Promise.all(questions.map(async (question: QuestionType) => {
     if (question.type !== qtypes.MEANING) {
-      const [uniqueList, idList] = seperateIdsAndNewOptions(question.options);
-      const lOptions = idList;
-      return createOptions(uniqueList, user).then((res) => {
-        lOptions.push(...res);
-        const q = {
-          ...question,
-          options: lOptions,
-        };
-
-        return q;
-      });
+      const [newOptionsList, oldOptionsIdList] = seperateIdsAndNewOptions(question.options);
+      const optionIdsList = oldOptionsIdList;
+      const newOptionsIdList = await createOptions(newOptionsList as Option[], user);
+      optionIdsList.push(...newOptionsIdList);
+      const questionData = {
+        ...question,
+        options: optionIdsList,
+      };
+      return questionData;
     } else {
       return question;
     }
-  })).then((res) => res);
+  })).then((data) => data);
 };
 
-export const setOptionsDataForSubmit = (questionsData: QuestionType[]) => {
-  const newQuestions = questionsData.map((ele) => {
-    const lOptions = (ele.options as Option[]).map((opt) => {
-      if (Object.keys(opt).includes('id')) {
-        return opt.id;
+export const setOptionsDataForSubmit = (questionsData: QuestionType[]): QuestionType[] => {
+  const newQuestions = questionsData.map((questionData) => {
+    const optionsList = (questionData.options as Option[]).map((option) => {
+      if (Object.keys(option).includes('id')) {
+        return option.id;
       }
-      return opt;
+      return option;
     });
     return {
-      ...ele,
-      options: lOptions,
+      ...questionData,
+      options: optionsList as Option[],
     };
   });
   return newQuestions;
 };
 
-export const convertTimestampToDateString = (timestamp: TimestampType, t: any) => {
+export const convertTimestampToDateString = (timestamp: TimestampType | null, t: TFunction<'translation', undefined>) => {
   if (!timestamp) {
     return t('INVALID_TIME');
   }
@@ -165,7 +153,7 @@ export const convertTimestampToDateString = (timestamp: TimestampType, t: any) =
   });
 };
 
-export const convertTimestampToDate = (timestamp: TimestampType, t: any) => {
+export const convertTimestampToDate = (timestamp: TimestampType, t: TFunction<'translation', undefined>) => {
   if (!timestamp) {
     return t('INVALID_TIME');
   }
@@ -175,25 +163,29 @@ export const convertTimestampToDate = (timestamp: TimestampType, t: any) => {
 
 export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
-export const splitAndCapitalize = (some: any) => some.split('-').map((ele: string) => capitalize(ele.trim())).join(' ');
+export const splitAndCapitalize = (str: string) => str.split('-').map((ele: string) => capitalize(ele.trim())).join(' ');
 
-export const splitAndClear = (some: any) => {
-  if (!some) {
+export const splitAndClear = (data: string | string[]) => {
+  // returns empty array if data is null or undefined
+  if (!data) {
     return [];
   }
-  let splitList = some;
-  if (typeof some === 'string') {
-    splitList = some.split(',').map((ele: string) => ele.trim());
+
+  let splitList = data;
+  // if data is string, split it
+  if (typeof data === 'string') {
+    splitList = data.split(',').map((ele: string) => ele.trim());
   }
+
   // remove empty strings
-  const arr = splitList.filter((str: string) => str !== '');
-  return arr;
+  const splitArray = (splitList as string[]).filter((str: string) => str !== '');
+  return splitArray;
 };
 
-export const compareUpdatedAt = (a: NewWordType, b: NewWordType) => {
-  if (a.updated_at < b.updated_at) {
+export const compareUpdatedAt = (word1: any, word2: any) => {
+  if (word1.updated_at < word2.updated_at) {
     return 1;
-  } if (a.updated_at > b.updated_at) {
+  } if (word1.updated_at > word2.updated_at) {
     return -1;
   }
   return 0;

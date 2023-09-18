@@ -1,243 +1,165 @@
+/* eslint-disable @typescript-eslint/indent */
 import { Dispatch, SetStateAction } from 'react';
+import { DocumentData, DocumentReference, Timestamp, doc } from 'firebase/firestore';
+import { TFunction } from 'i18next';
+import { User } from 'firebase/auth';
+
 import { SentenceType, QuestionType, NewWordType, MiniWord } from '../../types';
 import { firestore } from '../../firebase';
-import { DocumentData, DocumentReference, Timestamp, doc } from 'firebase/firestore';
 import { addQuestion, addSentence, addWord, addWordIdToWordlists, deleteQuestion, deleteSentence, updateQuestion, updateSentence, updateWord } from './controller';
-import { TFunction } from 'i18next';
-import { STATUS, qtypes } from '../constants';
+import { DATATYPES, STATUS, qtypes } from '../constants';
 import { createSupportWords, createWordsFromOptions, seperateIdsAndNewWords, splitAndClear } from './utils';
 import SUBMIT_TYPE from '../constants/submit';
-import { User } from 'firebase/auth';
 import PARTS_OF_SPEECH from '../constants/pos';
 
-export const addNewSentence = (e: any, setSentences: Dispatch<SetStateAction<SentenceType[]>>) => {
-  e.preventDefault();
-  setSentences((prevSentences) => [
-    ...prevSentences,
-    {
-      word_id: '',
-      sentence: '',
-      translation: '',
-    },
-  ]);
-};
-
-export const changeQuestion = (event: any, questions: QuestionType[], setQuestions: Dispatch<SetStateAction<QuestionType[]>>) => {
+export const addNewData = (
+  event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  setData: Dispatch<SetStateAction<(SentenceType | QuestionType)[]>>,
+  datatype: string,
+) => {
   event.preventDefault();
-  const updatedQuestions = questions.map((question, qidx) => {
-    if (event.target.id.includes('question')) {
-      if (parseInt(event.target.id.split('question')[1], 10) !== qidx) {
-        return question;
-      }
-      return {
-        ...question, question: event.target.value,
-      };
-    } if (event.target.id.includes('qtranslation')) {
-      if (parseInt(event.target.id.split('qtranslation')[1], 10) !== qidx) {
-        return question;
-      }
-      return {
-        ...question, translation: event.target.value,
-      };
-    } if (event.target.id.includes('type')) {
-      if (parseInt(event.target.id.split('type')[1], 10) !== qidx) {
-        return question;
-      }
-      return {
-        ...question, type: event.target.value,
-      };
-    } if (event.target.id.includes('options')) {
-      if (parseInt(event.target.id.split('options')[1], 10) !== qidx) {
-        return question;
-      }
-      return {
-        ...question, options: event.target.value,
-      };
-    } if (event.target.id.includes('answer')) {
-      if (parseInt(event.target.id.split('answer')[1], 10) !== qidx) {
-        return question;
-      }
-      return {
-        ...question, answer: event.target.value,
-      };
-    }
-    return question;
-  });
-  setQuestions(updatedQuestions);
+  const newData = {
+    word_id: '',
+    translation: '',
+  };
+  if (datatype === DATATYPES.SENTENCE) {
+    setData((prevData) => [
+      ...prevData,
+      {
+        ...newData,
+        sentence: '',
+      } as SentenceType,
+    ]);
+  } else if (datatype === DATATYPES.QUESTION) {
+    setData((prevData) => [
+      ...prevData,
+      {
+        ...newData,
+        question: '',
+        type: qtypes.CONTEXT,
+        options: [],
+        answer: 0,
+      } as QuestionType,
+    ]);
+  }
 };
 
-
-export const changeSentence = (event: any, sentences: SentenceType[], setSentences: Dispatch<SetStateAction<SentenceType[]>>) => {
-  event.preventDefault();
-  const updatedSentences = sentences.map((sentence, sidx) => {
-    if (event.target.id.includes('translation')) {
-      if (parseInt(event.target.id.split('translation')[1], 10) !== sidx) {
-        return sentence;
-      }
-      return {
-        ...sentence, translation: event.target.value,
-      };
-    } if (event.target.id.includes('sentence')) {
-      if (parseInt(event.target.id.split('sentence')[1], 10) !== sidx) {
-        return sentence;
-      }
-      return {
-        ...sentence, sentence: event.target.value,
-      };
-    }
-    return sentence;
-  });
-  setSentences(updatedSentences);
-};
-
-export const removeSentence = (
-  idx: number,
-  e: any,
-  t: TFunction<'translation', undefined>,
-  sentences: SentenceType[],
+export const addNewSentence = (
+  event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
   setSentences: Dispatch<SetStateAction<SentenceType[]>>,
-  formValues: any,
-  setFormValues: Dispatch<SetStateAction<any>>,
-  type = SUBMIT_TYPE.CREATE,
-  word?: string,
-) => {
+) => addNewData(event, setSentences as Dispatch<SetStateAction<(SentenceType | QuestionType)[]>>, DATATYPES.SENTENCE);
 
-  e.preventDefault();
-  let proceed = true;
-
-  if (type === SUBMIT_TYPE.EDIT && sentences[idx].id) {
-    const response = window.confirm(t('DELETE_FOR_WORD_CONFIRM', { what: 'sentence', data: sentences[idx].sentence, word }));
-
-    if (response) {
-      const getSentence = doc(firestore, `sentences/${sentences[idx].id}`);
-      deleteSentence(getSentence);
-    } else {
-      proceed = false;
-    }
-  }
-
-  if (proceed) {
-    const newSFormValues = {
-    } as any;
-
-    // update sentences based on id of deleted sentence
-    sentences.forEach((sentence, i) => {
-      const newSentence = {
-        ...sentence,
-        sentence: formValues[`sentence${i}`],
-        translation: formValues[`translation${i}`],
-      };
-      if (i > idx) {
-        newSFormValues[`sentence${i - 1}`] = newSentence.sentence;
-        newSFormValues[`translation${i - 1}`] = newSentence.translation;
-      } else if (i < idx) {
-        newSFormValues[`sentence${i}`] = newSentence.sentence;
-        newSFormValues[`translation${i}`] = newSentence.translation;
-      }
-    });
-
-    // add other fields which are not part of sentences
-    Object.entries(formValues).forEach(([key, value]) => {
-      if (!key.match(/sentence\d+/) && !key.match(/translation\d+/)) {
-        newSFormValues[key] = value;
-      }
-    });
-
-    setFormValues(newSFormValues);
-    setSentences((prevSentences) => {
-      const newSentences = [...prevSentences];
-      newSentences.splice(idx, 1);
-      return newSentences;
-    });
-  }
-};
-
-export const addNewQuestion = (e: any, setQuestions: Dispatch<SetStateAction<QuestionType[]>>) => {
-  e.preventDefault();
-  setQuestions((prevQuestions) => [
-    ...prevQuestions,
-    {
-      question: '',
-      translation: '',
-      type: qtypes.CONTEXT,
-      options: [],
-      answer: 0,
-      word_id: '',
-    },
-  ]);
-};
-
-export const removeQuestion = (
-  idx: number,
-  e: any,
-  t: TFunction<'translation', undefined>,
-  questions: QuestionType[],
+export const addNewQuestion = (
+  event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
   setQuestions: Dispatch<SetStateAction<QuestionType[]>>,
-  formValues: any,
-  setFormValues: Dispatch<SetStateAction<any>>,
+) => addNewData(event, setQuestions as Dispatch<SetStateAction<(SentenceType | QuestionType)[]>>, DATATYPES.QUESTION);
+
+export const changeData = (
+  event: React.ChangeEvent<any>,
+  dataList: (SentenceType | QuestionType)[], 
+  setDataList: Dispatch<SetStateAction<(SentenceType | QuestionType)[]>>,
+  datatype: string,
+) => {
+  event.preventDefault();
+  let updatedDataList = [] as SentenceType[] | QuestionType[];
+  if (datatype === DATATYPES.SENTENCE) {
+    updatedDataList = dataList.map((sentence, sentenceId) => {
+      switch (event.target.id) {
+      case `sentence${sentenceId}`:
+        return {
+          ...sentence, sentence: event.target.value,
+        };
+      case `translation${sentenceId}`:
+        return {
+          ...sentence, translation: event.target.value,
+        };
+      default:
+        return sentence;
+      }
+    }) as SentenceType[];
+  } else if (datatype === DATATYPES.QUESTION) {
+    updatedDataList = dataList.map((question, questionId) => {
+      switch (event.target.id) {
+      case `question${questionId}`:
+        return {
+          ...question, question: event.target.value,
+        };
+      case `qtranslation${questionId}`:
+        return {
+          ...question, translation: event.target.value,
+        };
+      case `type${questionId}`:
+        return {
+          ...question, type: event.target.value,
+        };
+      case `options${questionId}`:
+        return {
+          ...question, options: event.target.value,
+        };
+      case `answer${questionId}`:
+        return {
+          ...question, answer: event.target.value,
+        };
+      default:
+        return question;
+      }
+    }) as QuestionType[];
+  }
+  setDataList(updatedDataList);
+};
+
+export const changeQuestion = (event: React.ChangeEvent<any>, questions: QuestionType[], setQuestions: Dispatch<SetStateAction<QuestionType[]>>) =>
+  changeData(event, questions, setQuestions as Dispatch<SetStateAction<(SentenceType | QuestionType)[]>>, DATATYPES.QUESTION);
+
+export const changeSentence = (event: React.ChangeEvent<any>, sentences: SentenceType[], setSentences: Dispatch<SetStateAction<SentenceType[]>>) =>
+  changeData(event, sentences, setSentences as Dispatch<SetStateAction<(SentenceType | QuestionType)[]>>, DATATYPES.SENTENCE);
+
+export const removeData = (
+  removedDataId: number,
+  event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  text: TFunction<'translation', undefined>,
+  dataArray: SentenceType[] | QuestionType[],
+  setDataArray: Dispatch<SetStateAction<SentenceType[]>> | Dispatch<SetStateAction<QuestionType[]>>,
   type = SUBMIT_TYPE.CREATE,
+  datatype = DATATYPES.SENTENCE,
   word?: string,
 ) => {
-
-  e.preventDefault();
+  event.preventDefault();
   let proceed = true;
-  if (type === SUBMIT_TYPE.EDIT && questions[idx].id) {
-    const response = window.confirm(t('DELETE_FOR_WORD_CONFIRM', { what: 'question', data: questions[idx].question, word }));
 
+  if (type === SUBMIT_TYPE.EDIT && dataArray[removedDataId].id) {
+    const removedData = datatype === DATATYPES.SENTENCE ? (dataArray[removedDataId] as SentenceType).sentence : (dataArray[removedDataId] as QuestionType).question;
+    const response = window.confirm(text('DELETE_FOR_WORD_CONFIRM', { what: datatype, data: removedData, word }));
     if (response) {
-      const getQuestion = doc(firestore, `questions/${questions[idx].id}`);
-      deleteQuestion(getQuestion);
+      if (datatype === DATATYPES.SENTENCE) {
+        const getSentence = doc(firestore, `sentences/${dataArray[removedDataId].id}`);
+        deleteSentence(getSentence);
+      } else if (datatype === DATATYPES.QUESTION) {
+        const getQuestion = doc(firestore, `questions/${dataArray[removedDataId].id}`);
+        deleteQuestion(getQuestion);
+      }
     } else {
       proceed = false;
     }
   }
-  
+
   if (proceed) {
-    const newSFormValues = {
-    } as any;
-
-    // update questions based on id of deleted question
-    questions.forEach((question, i) => {
-      const newQuestion = {
-        ...question,
-        question: formValues[`question${i}`],
-        translation: formValues[`qtranslation${i}`],
-        type: formValues[`type${i}`],
-        options: formValues[`options${i}`],
-        answer: formValues[`answer${i}`],
-      };
-      if (i > idx) {
-        newSFormValues[`question${i - 1}`] = newQuestion.question;
-        newSFormValues[`qtranslation${i - 1}`] = newQuestion.translation;
-        newSFormValues[`type${i - 1}`] = newQuestion.type;
-        newSFormValues[`options${i - 1}`] = newQuestion.options;
-        newSFormValues[`answer${i - 1}`] = newQuestion.answer;
-      } else if (i < idx) {
-        newSFormValues[`question${i}`] = newQuestion.question;
-        newSFormValues[`qtranslation${i}`] = newQuestion.translation;
-        newSFormValues[`type${i}`] = newQuestion.type;
-        newSFormValues[`options${i}`] = newQuestion.options;
-        newSFormValues[`answer${i}`] = newQuestion.answer;
-      }
-    });
-
-    // add other fields which are not part of questions
-    Object.keys(formValues).forEach((key) => {
-      if (!key.match(/question\d+/) && !key.match(/qtranslation\d+/) && !key.match(/type\d+/) && !key.match(/options\d+/) && !key.match(/answer\d+/)) {
-        newSFormValues[key] = formValues[key];
-      }
-    });
-
-    setFormValues(newSFormValues);
-    setQuestions((prevQuestions) => {
-      const newQuestions = [...prevQuestions];
-      newQuestions.splice(idx, 1);
-      return newQuestions;
+    setDataArray((prevDataArray: any) => {
+      const newDataArray = [...prevDataArray];
+      newDataArray.splice(removedDataId, 1);
+      return newDataArray;
     });
   }
 };
 
-export const saveWord = async (formData: any, type: string, user: User, word?: NewWordType, getWord?: DocumentReference<DocumentData>, updated_word_id?: string) => {
+export const saveWord = async (
+  formData: any,
+  type: string,
+  user: User,
+  word?: NewWordType,
+  getWord?: DocumentReference<DocumentData>,
+  updated_word_id?: string,
+) => {
   const {
     sentences, questions, ...form
   } = formData;
@@ -313,19 +235,26 @@ export const saveWord = async (formData: any, type: string, user: User, word?: N
   }
 };
 
-export const createWordData = async (formData: any, synonyms: MiniWord[], antonyms: MiniWord[], user: User, type?: string, old_status?: string) => {
-  const [uniqueSyn, synIds] = seperateIdsAndNewWords(synonyms);
-  const [uniqueAnt, antIds] = seperateIdsAndNewWords(antonyms);
+export const createWordData = async (
+  formData: any,
+  synonyms: MiniWord[],
+  antonyms: MiniWord[],
+  user: User,
+  type?: string,
+  old_status?: string,
+) => {
+  const [newSynonymsList, existingSynonymsIds] = seperateIdsAndNewWords(synonyms);
+  const [newAntonymsList, existingAntonymsIds] = seperateIdsAndNewWords(antonyms);
 
-  return createSupportWords(uniqueSyn, user).then((synIdlist) => {
-    return createSupportWords(uniqueAnt, user).then((antIdList) => {
-      return createWordsFromOptions(formData.questions, user).then((qData) => {
-        const synArr = synIds.concat(synIdlist);
-        const antArr = antIds.concat(antIdList);
+  return createSupportWords(newSynonymsList, user).then((newSynonymsIds) => {
+    return createSupportWords(newAntonymsList, user).then((newAntonymsIds) => {
+      return createWordsFromOptions(formData.questions, user).then((newQuestions) => {
+        const synonymIds = existingSynonymsIds.concat(newSynonymsIds);
+        const antonymsIds = existingAntonymsIds.concat(newAntonymsIds);
 
-        formData.synonyms = synArr;
-        formData.antonyms = antArr;
-        formData.questions = qData;
+        formData.synonyms = synonymIds;
+        formData.antonyms = antonymsIds;
+        formData.questions = newQuestions;
         formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
         let status = formData.status ?? STATUS.CREATING_ENGLISH;
         if (type === SUBMIT_TYPE.APPROVE) {

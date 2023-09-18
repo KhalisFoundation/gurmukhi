@@ -23,7 +23,7 @@ import {
   removeWordFromWordlists,
   wordsCollection,
 } from '../util/controller';
-import { NewWordType } from '../../types/word';
+import { WordType } from '../../types/word';
 import { firestore } from '../../firebase';
 import { useUserAuth } from '../UserAuthContext';
 import {
@@ -43,8 +43,8 @@ const ViewDictionary = () => {
   const [filter, setFilter] = useState('');
   const [status, setStatus] = useState('all');
   const [listView, setListView] = useState<boolean>(false);
-  const [words, setWords] = useState<NewWordType[]>([]);
-  const [filteredWords, setFilteredWords] = useState<NewWordType[]>([]);
+  const [words, setWords] = useState<WordType[]>([]);
+  const [filteredWords, setFilteredWords] = useState<WordType[]>([]);
   const { user } = useUserAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -58,7 +58,7 @@ const ViewDictionary = () => {
     statusList = cstatus;
   }
 
-  const sortWords = (unwords: NewWordType[]) => {
+  const sortWords = (unwords: WordType[]) => {
     const sortedWords = unwords.sort(
       (p1, p2) => compareUpdatedAt(p1, p2),
     );
@@ -82,10 +82,6 @@ const ViewDictionary = () => {
     }
 
     setFilteredWords(sortWords(filteredList));
-  };
-
-  const handleSearch = async (event: any) => {
-    event.preventDefault();
   };
 
   useEffect(() => {
@@ -117,7 +113,7 @@ const ViewDictionary = () => {
 
   }, []);
 
-  const delWord = (deleted_word: any) => {
+  const delWord = (deleted_word: WordType) => {
     // add code to remove word_id from its respective wordlist
     const response = window.confirm(`Are you sure you want to delete this word: ${deleted_word.word}? \n This action is not reversible.`);
     if (response) {
@@ -149,7 +145,7 @@ const ViewDictionary = () => {
           >
             <div className="ms-2 me-auto">
               <h3 className="fw-bold">{word.word}</h3>
-              <p>{word.translation}</p>
+              <p>{word.translation?.toLowerCase()}</p>
             </div>
             <div className="d-flex flex-column align-items-end">
               <ButtonGroup>
@@ -201,7 +197,7 @@ const ViewDictionary = () => {
                 {word.word}
                 <br />
                 (
-                {word.translation}
+                {word.translation?.toLowerCase()}
                 )
               </Card.Title>
               <div className="d-flex flex-column align-items-end">
@@ -255,7 +251,6 @@ const ViewDictionary = () => {
       </Button>
       <Form
         className="d-flex align-items-center w-100"
-        onSubmit={handleSearch}
       >
         <Form.Group
           controlId="formBasicSearch"
@@ -271,7 +266,7 @@ const ViewDictionary = () => {
         </Form.Group>
 
         <div className="d-flex align-items-center">
-          <Form.Group controlId="filter" onChange={(e: any) => setFilter(e.target.value ?? '')} defaultValue={filter}>
+          <Form.Group controlId="filter" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilter(e.target.value ?? '')} defaultValue={filter}>
             <Form.Label>{t('FILTER')}</Form.Label>
             <Form.Select>
               <option key="all" value="all">{t('SHOW_ALL')}</option>
@@ -282,14 +277,14 @@ const ViewDictionary = () => {
             </Form.Select>
           </Form.Group>
 
-          <Form.Group controlId="status" onChange={(e: any) => setStatus(e.target.value ?? '')}>
+          <Form.Group controlId="status" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value ?? '')}>
             <Form.Label>{t('STATUS')}</Form.Label>
             <Form.Select defaultValue={status}>
               <option key="all" value="all">{t('SHOW_ALL')}</option>
-              {statusList.length > 0 && statusList.map((ele) => {
-                const val = splitAndCapitalize(ele);
+              {statusList.length > 0 && statusList.map((statusValue) => {
+                const capitalizedStatus = splitAndCapitalize(statusValue);
                 return (
-                  <option key={ele} value={ele}>{val}</option>
+                  <option key={statusValue} value={statusValue}>{capitalizedStatus}</option>
                 );
               })}
             </Form.Select>

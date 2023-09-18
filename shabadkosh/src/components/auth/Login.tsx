@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Form, Alert, Card, Button,
@@ -14,14 +14,14 @@ import routes from '../constants/routes';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const { logIn, signInWithGoogle, logOut } = useUserAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    setError('');
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage('');
     try {
       await logIn(email, password).then((data: UserCredential) => {
         const { uid } = data.user;
@@ -29,28 +29,28 @@ const Login = () => {
           checkUser(uid, email).then((found) => {
             if (!found) {
               logOut();
-              setError('Invalid user');
+              setErrorMessage('Invalid user');
             }
           });
         }
       });
       navigate(routes.words);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (error: any) {
+      setErrorMessage(error.message);
     }
   };
 
-  const handleGoogleSignIn = async (e: any) => {
-    e.preventDefault();
+  const handleGoogleSignIn = async (event: React.MouseEvent) => {
+    event.preventDefault();
     try {
       // left with getting confirmation of logging to navigate to homepage
-      await signInWithGoogle().then((success: any) => {
+      await signInWithGoogle().then((success: boolean) => {
         if (success) {
           navigate(routes.words);
         }
       });
-    } catch (err: any) {
-      console.log(err.message);
+    } catch (error: any) {
+      console.log(error.message);
     }
   };
 
@@ -58,7 +58,7 @@ const Login = () => {
     <div className="container">
       <div className="p-4 box d-flex flex-column align-items-center">
         <h2 className="mb-3">{t('KOSH_LOGIN')}</h2>
-        {error && <Alert variant="danger">{error}</Alert>}
+        {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="formBasicEmail">
             <Form.Control

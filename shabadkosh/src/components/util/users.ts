@@ -2,6 +2,7 @@ import {
   DocumentReference, collection, doc, getDoc, getDocs, query, setDoc, where,
 } from 'firebase/firestore';
 import db from './controller';
+import { UserProfile } from 'firebase/auth';
 
 export const usersCollection = collection(db, 'users');
 
@@ -17,7 +18,7 @@ export const checkIfEmailUnique = async (email: string) => {
   return usersSnapshot.empty;
 };
 
-export const updateUser = async (userRef: DocumentReference, userData: any) => {
+export const updateUser = async (userRef: DocumentReference, userData: UserProfile) => {
   const updatedUser = await setDoc(userRef, {
     ...userData,
   });

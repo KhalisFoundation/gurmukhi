@@ -18,8 +18,7 @@ const Search = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSearch = async (event: any) => {
+  const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
   };
 

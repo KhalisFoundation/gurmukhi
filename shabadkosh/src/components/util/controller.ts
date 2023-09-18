@@ -17,7 +17,8 @@ import {
 } from 'firebase/firestore';
 import { firestore as db, firestore } from '../../firebase';
 import { MiniWord, NewWordType } from '../../types/word';
-import { MiniWordlist } from '../../types/wordlist';
+import { MiniWordlist, WordlistType } from '../../types/wordlist';
+import { QuestionData, SentenceType } from '../../types';
 
 export default db;
 
@@ -58,10 +59,15 @@ export const deleteWord = async (word: DocumentReference) => {
 // get word from words collection
 export const getWords = async () => {
   const querySnapshot = await getDocs(wordsCollection);
-  const words: any[] = [];
+  const words: NewWordType[] = [];
   querySnapshot.forEach((wordData) => {
     words.push({
-      ...wordData.data(), id: wordData.id,
+      ...wordData.data(),
+      id: wordData.id,
+      created_at: wordData.data().created_at,
+      created_by: wordData.data().created_by,
+      updated_at: wordData.data().updated_at,
+      updated_by: wordData.data().updated_by,
     });
   });
   return words;
@@ -74,11 +80,6 @@ export const reviewWord = async (
   status: string,
   updated_by: string,
 ) => {
-  console.log('word_data', word_data);
-  console.log('status', status);
-  console.log('updated_by', updated_by);
-  console.log('word', word);
-  
   const revWord = await updateDoc(word, {
     ...word_data, status, updated_at: Timestamp.now(), updated_by,
   });
@@ -98,14 +99,14 @@ export const getWordsByIdList = async (id_list: string[]) => {
 // Sentences collection
 export const sentencesCollection = collection(db, 'sentences');
 
-export const addSentence = async (sentence_data: any) => {
+export const addSentence = async (sentence_data: SentenceType) => {
   const newSentence = await addDoc(sentencesCollection, {
     ...sentence_data,
   });
   return newSentence.id;
 };
 
-export const updateSentence = async (sentence: DocumentReference, sentence_data: any) => {
+export const updateSentence = async (sentence: DocumentReference, sentence_data: SentenceType) => {
   const updatedSentence = await updateDoc(sentence, {
     ...sentence_data,
   });
@@ -133,14 +134,14 @@ export const deleteSentenceByWordId = async (word_id: string) => {
 // Questions collection
 export const questionsCollection = collection(db, 'questions');
 
-export const addQuestion = async (question_data: any) => {
+export const addQuestion = async (question_data: QuestionData) => {
   const newQuestion = await addDoc(questionsCollection, {
     ...question_data,
   });
   return newQuestion.id;
 };
 
-export const updateQuestion = async (question: DocumentReference, question_data: any) => {
+export const updateQuestion = async (question: DocumentReference, question_data: QuestionData) => {
   const updatedQuestion = await updateDoc(question, {
     ...question_data,
   });
@@ -168,7 +169,7 @@ export const deleteQuestionByWordId = async (word_id: string) => {
 // Wordlists collection
 export const wordlistsCollection = collection(db, 'wordlists');
 
-export const addNewWordlist = async (wordlist_data: any) => {
+export const addNewWordlist = async (wordlist_data: WordlistType) => {
   const newWordlist = await addDoc(wordlistsCollection, {
     ...wordlist_data,
   });
@@ -180,7 +181,7 @@ export const getWordlist = async (wordlist_ref: DocumentReference) => {
   return gotWlist;
 };
 
-export const updateWordlist = async (wordlist: DocumentReference, wordlist_data: any) => {
+export const updateWordlist = async (wordlist: DocumentReference, wordlist_data: WordlistType) => {
   const updatedWordlist = await updateDoc(wordlist, {
     ...wordlist_data,
   });
@@ -246,8 +247,8 @@ export const setWordInWordlists = async (
 
 export const removeWordFromWordlists = async (word_id: string) => {
   const batch = writeBatch(firestore);
-  await getWordlistsByWordId(word_id).then((ele) => {
-    ele.map((val) => {
+  await getWordlistsByWordId(word_id).then((wordlist) => {
+    wordlist.map((val) => {
       const wlRef = doc(firestore, 'wordlists', val.id);
       batch.update(wlRef, {
         words: arrayRemove(word_id),

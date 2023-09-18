@@ -5,9 +5,10 @@ import { auth } from '../../firebase';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
 import { useUserAuth } from '../UserAuthContext';
+import { User } from 'firebase/auth';
 
 const Profile = () => {
-  const [authUser, setAuthUser] = useState<any>(null);
+  const [authUser, setAuthUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { user } = useUserAuth();
   const { t } = useTranslation();

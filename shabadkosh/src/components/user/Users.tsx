@@ -47,7 +47,7 @@ const Users = () => {
     (p1, p2) => compareUpdatedAt(p1, p2),
   );
 
-  const delUser = (lUser: any) => {
+  const delUser = (lUser: NewUserType) => {
     if (lUser.email === user.email && lUser.id === user.uid) {
       alert('Self-destruct is not allowed!');
       return;

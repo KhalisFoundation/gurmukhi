@@ -13,10 +13,11 @@ import routes from '../constants/routes';
 import { useUserAuth } from '../UserAuthContext';
 import { compareUpdatedAt } from '../util';
 import { deleteWordlist, wordlistsCollection } from '../util/controller';
+import { WordlistType } from '../../types';
 
 const Wordlists = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [wordlists, setWordlists] = useState<any>([]);
+  const [wordlists, setWordlists] = useState<WordlistType[]>([]);
   const { user } = useUserAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ const Wordlists = () => {
     return sortedWordlists;
   };
 
-  const delWordlist = (wordlist: any) => {
+  const delWordlist = (wordlist: WordlistType) => {
     const response = window.confirm(`Are you sure you want to delete this wordlist: ${wordlist.name}? \n This action is not reversible.`);
     if (response) {
       const getWordlist = doc(firestore, `wordlists/${wordlist.id}`);
@@ -66,7 +67,7 @@ const Wordlists = () => {
         <div className="ms-2 me-auto">
           <h3 className="fw-bold">{wordlist.name}</h3>
           <ul>
-            {Object.entries(wordlist.metadata).map(([key, val]) => {
+            {Object.entries(wordlist.metadata ?? {}).map(([key, val]) => {
               if (val) {
                 return (
                   <li key={key}>

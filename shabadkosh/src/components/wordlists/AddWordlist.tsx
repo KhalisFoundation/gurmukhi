@@ -2,7 +2,7 @@
 import {
   DocumentData, QuerySnapshot, Timestamp, onSnapshot,
 } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 import {
   Form, Button, Card,
 } from 'react-bootstrap';
@@ -14,6 +14,7 @@ import { auth } from '../../firebase';
 import routes from '../constants/routes';
 import { MiniWord } from '../../types/word';
 import { STATUS } from '../constants';
+import { useUserAuth } from '../UserAuthContext';
 
 const AddWordlist = () => {
   const [formValues, setFormValues] = useState({
@@ -24,6 +25,7 @@ const AddWordlist = () => {
   const [words, setWords] = useState<MiniWord[]>([]);
   const [selectedWords, setSelectedWords] = useState<MiniWord[]>([]);
   const { t } = useTranslation();
+  const { user } = useUserAuth();
 
   useEffect(() => {
     setIsLoading(true);
@@ -37,7 +39,7 @@ const AddWordlist = () => {
     setIsLoading(false);
   }, []);
 
-  const onMultiselectChange = (selectedList: [], item: any) => {
+  const onMultiselectChange = (selectedList: []) => {
     setSelectedWords(selectedList);
   };
 
@@ -45,9 +47,9 @@ const AddWordlist = () => {
     setValidated(false);
   };
 
-  const handleChange = (e: any) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormValues({
-      ...formValues, [e.target.id]: e.target.value,
+      ...formValues, [event.target.id]: event.target.value,
     });
   };
 
@@ -63,9 +65,9 @@ const AddWordlist = () => {
       },
       words: formData.words ?? [],
       created_at: Timestamp.now(),
-      created_by: auth.currentUser?.email,
+      created_by: auth.currentUser?.email ?? user.email,
       updated_at: Timestamp.now(),
-      updated_by: auth.currentUser?.email,
+      updated_by: auth.currentUser?.email ?? user.email,
       notes: formData.notes ?? '',
     }).finally(() => {
       setIsLoading(false);
@@ -75,11 +77,11 @@ const AddWordlist = () => {
     setSubmitted(true);
   };
 
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
 
-    const form = e.currentTarget;
+    const form = event.currentTarget;
     if (form.checkValidity() === false) {
       setValidated(true);
       return;
@@ -87,7 +89,7 @@ const AddWordlist = () => {
 
     const formData = {
       ...formValues,
-      words: selectedWords.map((ele) => ele.id),
+      words: selectedWords.map((word) => word.id),
     };
 
     addWordlist(formData);
@@ -154,8 +156,8 @@ const AddWordlist = () => {
         <Form.Group className="mb-3" controlId="status" onChange={handleChange}>
           <Form.Label>{t('STATUS')}</Form.Label>
           <Form.Select aria-label="Default select example" defaultValue="active">
-            {[STATUS.ACTIVE, STATUS.INACTIVE].map((ele) => (
-              <option key={ele} value={ele}>{ele}</option>
+            {[STATUS.ACTIVE, STATUS.INACTIVE].map((status) => (
+              <option key={status} value={status}>{status}</option>
             ))}
           </Form.Select>
         </Form.Group>

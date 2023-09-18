@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Form, Alert, Button,
@@ -13,37 +13,37 @@ import { checkIfEmailUnique } from '../util';
 const Signup = () => {
   const [email, setEmail] = useState('');
   const [diplayName, setDisplayName] = useState('');
-  const [error, setError] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [password, setPassword] = useState('');
   const { signUp } = useUserAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const handleSubmit = async (e : any) => {
-    e.preventDefault();
-    setError('');
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage('');
     try {
       const role = roles.creator;
       await checkIfEmailUnique(email).then(async (unique) => {
         if (unique) {
-          await signUp(diplayName, role, email, password).then((val: any) => {
+          await signUp(diplayName, role, email, password).then((val: boolean) => {
             if (val) {
               navigate(routes.words);
             }
           });
         } else {
-          setError('Username already exists!');
+          setErrorMessage('Username already exists!');
         }
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (error: any) {
+      setErrorMessage(error.message);
     }
   };
 
   return (
     <div className="container justify-content-center">
       <h2 className="mb-3">{t('KOSH_SIGNUP')}</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
+      {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
       <Form
         onSubmit={handleSubmit}
         className="w-100"

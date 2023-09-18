@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { FormEvent, useState } from 'react';
 import { Form } from 'react-bootstrap';
 import Multiselect from 'multiselect-react-dropdown';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +9,7 @@ interface IProps {
   id: string;
   name: string;
   word: Option[];
-  setWord: (id: string, option: any, type: string) => void;
+  setWord: (id: string, option: Option[], type: string) => void;
   words: MiniWord[];
   placeholder: string;
   type : string;
@@ -23,37 +23,35 @@ const Options = ({
   const [translation, setTranslation] = useState<string>('');
   const { t } = useTranslation();
 
-  const onViewToggle = (e: any) => {
-    e.preventDefault();
+  const onViewToggle = (event: FormEvent) => {
+    event.preventDefault();
     setShowNewForm(!showNewForm);
   };
 
-  const addNew = (e: any, newOption: string) => {
-    e.preventDefault();
-    if (newOption.includes(':')) {
-      const [gurmukhi, english] = newOption.split(':').map((val) => val.trim());
+  const addNew = (event: FormEvent, optionString: string) => {
+    event.preventDefault();
+    if (optionString.includes(':')) {
+      const [gurmukhi, english] = optionString.split(':').map((val) => val.trim());
       if (gurmukhi.match(regex.gurmukhiSentenceRegex)
         && english.match(regex.englishQuestionTranslationRegex)) {
-        const d = {
+        const newOption = {
           option: gurmukhi,
           translation: english,
           label: `${gurmukhi} (${english.toLowerCase()})`,
-        } as any;
+        } as Option;
 
         const duplicate = (word as Option[]).find(
-          (obj) => obj.option === d.option,
+          (obj) => obj.option === newOption.option,
         );
 
         const alreadyInWords = (words as MiniWord[]).find(
-          (obj) => obj.word === d.option,
+          (obj) => obj.word === newOption.option,
         );
 
-        if (!duplicate) {
-          if (!alreadyInWords) {
-            setWord(id, [...word, d], type ?? '');
-          } else {
-            alert(`${d.option} already exists, choose it from the dropdown`);
-          }
+        if (!duplicate && !alreadyInWords) {
+          setWord(id, [...word, newOption] as Option[], type ?? '');
+        } else {
+          alert(`${newOption.option} already exists, choose it from the dropdown`);
         }
 
         setOption('');
@@ -62,31 +60,30 @@ const Options = ({
     }
   };
 
-  const remWord = (e: any) => {
-    e.preventDefault();
+  const remWord = (event: React.MouseEvent) => {
+    event.preventDefault();
     setOption('');
     setTranslation('');
   };
 
   const onChange = (selectedList: [], item: any) => {
-    const newOpt = {
+    const newOption = {
       option: item.word ?? item.option,
       translation: item.translation,
       label: `${item.word ?? item.option} (${item.translation.toLowerCase()})`,
-    } as any;
+    } as Option;
     if (Object.keys(item).includes('id')) {
-      newOpt.id = item.id;
+      newOption.id = item.id;
     }
     const updatedOptions = selectedList.map((val: Option) => {
       if (Object.keys(val).includes('id')) {
         if (val.id === item.id) {
-          return newOpt;
+          return newOption;
         }
-        return val;
       }
       return val;
     });
-    setWord(id, updatedOptions, type ?? '');
+    setWord(id, updatedOptions as Option[], type ?? '');
   };
 
   return (
@@ -95,7 +92,7 @@ const Options = ({
       <button
         type="button"
         className="btn btn-sm"
-        onClick={(e) => onViewToggle(e)}
+        onClick={(event) => onViewToggle(event)}
       >
         {t('HAND_PEN')}
       </button>
@@ -114,26 +111,26 @@ const Options = ({
       >
         <div>
           {t('OPTION')}
-          <Form.Control id={`option${id}`} type="text" placeholder={placeholder} pattern={regex.gurmukhiSentenceRegex} value={option} onChange={(e) => setOption(e.target.value)} />
+          <Form.Control id={`option${id}`} type="text" placeholder={placeholder} pattern={regex.gurmukhiSentenceRegex} value={option} onChange={(event) => setOption(event.target.value)} />
           <Form.Control.Feedback type="invalid" itemID={`option${id}`}>{t('FEEDBACK_GURMUKHI', { for: t('OPTION') })}</Form.Control.Feedback>
         </div>
         <div>
           {t('TRANSLATION')}
-          <Form.Control id={`otranslation${id}`} type="text" placeholder="Enter translation" pattern={regex.englishQuestionTranslationRegex} value={translation} onChange={(e) => setTranslation(e.target.value)} />
+          <Form.Control id={`otranslation${id}`} type="text" placeholder="Enter translation" pattern={regex.englishQuestionTranslationRegex} value={translation} onChange={(event) => setTranslation(event.target.value)} />
           <Form.Control.Feedback type="invalid" itemID={`otranslation${id}`}>{t('FEEDBACK_ENGLISH', { for: t('TRANSLATION') })}</Form.Control.Feedback>
         </div>
         <div>
           <button
             type="button"
             className="btn btn-sm fs-5 me-2 p-0"
-            onClick={(e) => addNew(e, `${option}:${translation}`)}
+            onClick={(event) => addNew(event, `${option}:${translation}`)}
           >
             {t('CHECK')}
           </button>
           <button
             type="button"
             className="btn btn-sm fs-5 ms-2 p-0"
-            onClick={(e) => remWord(e)}
+            onClick={remWord}
           >
             {t('CROSS')}
           </button>

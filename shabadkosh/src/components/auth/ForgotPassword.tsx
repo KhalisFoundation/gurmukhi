@@ -11,15 +11,15 @@ const ForgotPassword = () => {
   const [emailMessage, setEmailMessage] = useState(false);
   const { t } = useTranslation();
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
     try {
       await passwordReset(email);
       setEmailMessage(true);
-    } catch (err: any) {
-      if (Object.keys(errors).includes(err.code)) {
-        alert(errors[err.code]);
+    } catch (error: any) {
+      if (Object.keys(errors).includes(error.code)) {
+        alert(errors[error.code]);
         setEmail('');
       }
     }
