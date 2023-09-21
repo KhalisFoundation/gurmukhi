@@ -11,20 +11,14 @@ import {
   Row,
 } from 'react-bootstrap';
 import {
-  DocumentData, QuerySnapshot, doc, onSnapshot,
+  DocumentData, QuerySnapshot, onSnapshot,
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  deleteQuestionByWordId,
-  deleteSentenceByWordId,
-  deleteWord,
-  removeWordFromSupport,
-  removeWordFromWordlists,
   wordsCollection,
 } from '../util/controller';
 import { WordType } from '../../types/word';
-import { firestore } from '../../firebase';
 import { useUserAuth } from '../UserAuthContext';
 import {
   STATUS,
@@ -36,6 +30,7 @@ import { compareUpdatedAt, splitAndCapitalize } from '../util/utils';
 import regex from '../constants/regex';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
+import { removeWord } from '../util/words';
 
 const ViewDictionary = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -113,26 +108,6 @@ const ViewDictionary = () => {
 
   }, []);
 
-  const delWord = (deleted_word: WordType) => {
-    // add code to remove word_id from its respective wordlist
-    const response = window.confirm(`Are you sure you want to delete this word: ${deleted_word.word}? \n This action is not reversible.`);
-    if (response) {
-      const getWord = doc(firestore, `words/${deleted_word.id}`);
-      removeWordFromSupport(deleted_word.id).then(() => {
-        removeWordFromWordlists(deleted_word.id).then(() => {
-          deleteWord(getWord).then(() => {
-            deleteSentenceByWordId(deleted_word.id).then(() => {
-              deleteQuestionByWordId(deleted_word.id).then(() => {
-                setIsLoading(false);
-                navigate(routes.words);
-              });
-            });
-          });
-        });
-      });
-    }
-  };
-
   const wordsData = sortWords(filteredWords) && sortWords(filteredWords).length
     ? sortWords(filteredWords)?.map((word) => {
       const detailUrl = routes.word.replace(':wordid', word.id ?? '');
@@ -165,7 +140,7 @@ const ViewDictionary = () => {
                 ) : null }
                 {user?.role === roles.admin ? (
                   <Button
-                    onClick={() => delWord(word)}
+                    onClick={() => removeWord(word, setIsLoading, navigate)}
                     className="bg-transparent border-0"
                   >
                     {t('BIN')}
@@ -212,7 +187,7 @@ const ViewDictionary = () => {
             <ButtonGroup>
               <Button href={detailUrl} variant="success">{t('VIEW')}</Button>
               {statusList.includes(word.status ?? STATUS.CREATING_ENGLISH) ? <Button href={editUrl}>{t('EDIT')}</Button> : null }
-              {user?.role === roles.admin ? <Button onClick={() => delWord(word)} variant="danger">{t('DELETE')}</Button> : null }
+              {user?.role === roles.admin ? <Button onClick={() => removeWord(word, setIsLoading, navigate)} variant="danger">{t('DELETE')}</Button> : null }
             </ButtonGroup>
           </Card.Body>
         </Card>

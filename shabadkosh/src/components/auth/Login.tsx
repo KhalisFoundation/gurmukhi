@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Form, Alert, Card, Button,
 } from 'react-bootstrap';
-import { UserCredential } from 'firebase/auth';
 import GoogleButton from 'react-google-button';
 import { Trans, useTranslation } from 'react-i18next';
 import { useUserAuth } from '../UserAuthContext';
@@ -23,17 +22,15 @@ const Login = () => {
     event.preventDefault();
     setErrorMessage('');
     try {
-      await logIn(email, password).then((data: UserCredential) => {
-        const { uid } = data.user;
-        if (email) {
-          checkUser(uid, email).then((found) => {
-            if (!found) {
-              logOut();
-              setErrorMessage('Invalid user');
-            }
-          });
+      const userCredential = await logIn(email, password);
+      const { uid } = userCredential.user;
+      if (email) {
+        const found = await checkUser(uid, email);
+        if (!found) {
+          logOut();
+          setErrorMessage('Invalid user');
         }
-      });
+      }
       navigate(routes.words);
     } catch (error: any) {
       setErrorMessage(error.message);
@@ -44,11 +41,10 @@ const Login = () => {
     event.preventDefault();
     try {
       // left with getting confirmation of logging to navigate to homepage
-      await signInWithGoogle().then((success: boolean) => {
-        if (success) {
-          navigate(routes.words);
-        }
-      });
+      const success = await signInWithGoogle();
+      if (success) {
+        navigate(routes.words);
+      }
     } catch (error: any) {
       console.log(error.message);
     }

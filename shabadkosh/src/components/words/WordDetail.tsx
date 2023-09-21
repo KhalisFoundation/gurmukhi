@@ -23,12 +23,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { firestore } from '../../firebase';
 import {
-  deleteQuestionByWordId,
-  deleteSentenceByWordId,
-  deleteWord, getWordlistsByWordId,
-  getWordsByIdList, questionsCollection,
-  removeWordFromSupport,
-  removeWordFromWordlists,
+  getWordlistsByWordId,
+  getWordsByIdList,
+  questionsCollection,
   reviewWord,
   sentencesCollection,
   wordsCollection,
@@ -43,6 +40,7 @@ import {
 import { capitalize, convertTimestampToDateString } from '../util/utils';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
+import { removeWord } from '../util/words';
 
 const WordDetail = () => {
   const { wordid } = useParams();
@@ -69,8 +67,8 @@ const WordDetail = () => {
   }
 
   useEffect(() => {
-    let synList = [] as string[] | MiniWord[];
-    let antList = [] as string[] | MiniWord[];
+    let synonymsList = [] as string[] | MiniWord[];
+    let antonymsList = [] as string[] | MiniWord[];
     let localWords = [] as NewWordType[];
 
     const fetchWords = async () => {
@@ -106,20 +104,18 @@ const WordDetail = () => {
           updated_by: docSnap.data().updated_by,
           ...docSnap.data(),
         };
-        synList = newWordObj.synonyms;
-        antList = newWordObj.antonyms;
+        synonymsList = newWordObj.synonyms;
+        antonymsList = newWordObj.antonyms;
         setWord(newWordObj);
         let listOfWordlists = [] as WordlistType[];
-        await getWordlistsByWordId(wordid ?? '').then((data) => {
-          if (data && data !== undefined) {
-            listOfWordlists = data.map((wordlist) => ({
-              id: wordlist.id,
-              ...wordlist.data(),
-            } as WordlistType));
-          }
-        }).finally(() => {
-          setIsLoading(false);
-        });
+        const wordlistData = await getWordlistsByWordId(wordid ?? '');
+        if (wordlistData && wordlistData !== undefined) {
+          listOfWordlists = wordlistData.map((wordlist) => ({
+            id: wordlist.id,
+            ...wordlist.data(),
+          } as WordlistType));
+        }
+        setIsLoading(false);
         setWordlists(listOfWordlists);
       } else {
         setFound(false);
@@ -129,28 +125,24 @@ const WordDetail = () => {
 
     const fetchSynonyms = async () => {
       setIsLoading(true);
-      await getWordsByIdList(synList as string[]).then((docs) => {
-        if (docs && docs !== undefined) {
-          synList = docs.map((d) => ({
-            id: d.id, ...d.data(),
-          } as MiniWord)) as MiniWord[];
-        }
-      }).finally(() => {
-        setIsLoading(false);
-      });
+      const synonymsData = await getWordsByIdList(synonymsList as string[]);
+      if (synonymsData && synonymsData !== undefined) {
+        synonymsList = synonymsData.map((synonym) => ({
+          id: synonym.id, ...synonym.data(),
+        } as MiniWord)) as MiniWord[];
+      }
+      setIsLoading(false);
     };
 
     const fetchAntonyms = async () => {
       setIsLoading(true);
-      await getWordsByIdList(antList as string[]).then((docs) => {
-        if (docs && docs !== undefined) {
-          antList = docs.map((d) => ({
-            id: d.id, ...d.data(),
-          } as MiniWord)) as MiniWord[];
-        }
-      }).finally(() => {
-        setIsLoading(false);
-      });
+      const antonymsData = await getWordsByIdList(antonymsList as string[]);
+      if (antonymsData && antonymsData !== undefined) {
+        antonymsList = antonymsData.map((antonym) => ({
+          id: antonym.id, ...antonym.data(),
+        } as MiniWord)) as MiniWord[];
+      }
+      setIsLoading(false);
     };
 
     const fetchSentence = async () => {
@@ -206,7 +198,7 @@ const WordDetail = () => {
         fetchSynonyms().then(() => {
           fetchAntonyms().then(() => {
             setWord((prev) => ({
-              ...prev, synonyms: synList as MiniWord[], antonyms: antList as MiniWord[],
+              ...prev, synonyms: synonymsList as MiniWord[], antonyms: antonymsList as MiniWord[],
             }));
             fetchSentence();
             fetchQuestions();
@@ -217,26 +209,7 @@ const WordDetail = () => {
   }, []);
 
   const editUrl = routes.editWord.replace(':wordid', wordid ?? '');
-  const delWord = (deleted_word: WordType) => {
-    const response = window.confirm(`Are you sure you want to delete this word: ${deleted_word.word}?\nThis action will delete all sentences and questions for this word as well. \n This action is not reversible!`);
-    if (response) {
-      const getDelWord = doc(firestore, `words/${deleted_word.id}`);
-      setIsLoading(true);
-      removeWordFromSupport(deleted_word.id).then(() => {
-        removeWordFromWordlists(deleted_word.id).then(() => {
-          deleteWord(getDelWord).then(() => {
-            deleteSentenceByWordId(deleted_word.id).then(() => {
-              deleteQuestionByWordId(deleted_word.id).then(() => {
-                alert('Word deleted!');
-                setIsLoading(false);
-                navigate(routes.words);
-              });
-            });
-          });
-        });
-      });
-    }
-  };
+
   const revWord = (word_in_review: NewWordType, type: string) => {
     let action = '';
     if (type === 'review') {
@@ -329,7 +302,7 @@ const WordDetail = () => {
             {((word.status && statusList.includes(word.status ?? STATUS.CREATING_ENGLISH)) || word.is_for_support) ? <Button href={editUrl}>{t('EDIT')}</Button> : null}
             {(word.status && Object.values(cstatus).includes(word.status)) ? <Button onClick={() => revWord(word, 'review')} variant="success">{t('SEND_TO_REVIEW')}</Button> : null}
             {(word.status && [roles.reviewer, roles.admin].includes(user.role) && [STATUS.REVIEW_ENGLISH, STATUS.REVIEW_FINAL].includes(word.status)) ? <Button onClick={() => revWord(word, 'approve')} variant="success">{t('APPROVE')}</Button> : null}
-            {user.role === roles.admin ? <Button onClick={() => delWord(word)} variant="danger">{t('DELETE')}</Button> : null}
+            {user.role === roles.admin ? <Button onClick={() => removeWord(word, setIsLoading, navigate)} variant="danger">{t('DELETE')}</Button> : null}
           </ButtonGroup>
         </div>
 

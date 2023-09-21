@@ -4,13 +4,15 @@ import { DocumentData, DocumentReference, Timestamp, doc } from 'firebase/firest
 import { TFunction } from 'i18next';
 import { User } from 'firebase/auth';
 
-import { SentenceType, QuestionType, NewWordType, MiniWord } from '../../types';
+import { SentenceType, QuestionType, NewWordType, MiniWord, WordType } from '../../types';
 import { firestore } from '../../firebase';
-import { addQuestion, addSentence, addWord, addWordIdToWordlists, deleteQuestion, deleteSentence, updateQuestion, updateSentence, updateWord } from './controller';
+import { addQuestion, addSentence, addWord, addWordIdToWordlists, deleteQuestion, deleteQuestionByWordId, deleteSentence, deleteSentenceByWordId, deleteWord, removeWordFromSupport, removeWordFromWordlists, updateQuestion, updateSentence, updateWord } from './controller';
 import { DATATYPES, STATUS, qtypes } from '../constants';
 import { createSupportWords, createWordsFromOptions, seperateIdsAndNewWords, splitAndClear } from './utils';
 import SUBMIT_TYPE from '../constants/submit';
 import PARTS_OF_SPEECH from '../constants/pos';
+import routes from '../constants/routes';
+import { NavigateFunction } from 'react-router-dom';
 
 export const addNewData = (
   event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -246,27 +248,46 @@ export const createWordData = async (
   const [newSynonymsList, existingSynonymsIds] = seperateIdsAndNewWords(synonyms);
   const [newAntonymsList, existingAntonymsIds] = seperateIdsAndNewWords(antonyms);
 
-  return createSupportWords(newSynonymsList, user).then((newSynonymsIds) => {
-    return createSupportWords(newAntonymsList, user).then((newAntonymsIds) => {
-      return createWordsFromOptions(formData.questions, user).then((newQuestions) => {
-        const synonymIds = existingSynonymsIds.concat(newSynonymsIds);
-        const antonymsIds = existingAntonymsIds.concat(newAntonymsIds);
+  try {
+    const newSynonymsIds = await createSupportWords(newSynonymsList, user);
+    const newAntonymsIds = await createSupportWords(newAntonymsList, user);
+    const newQuestions = await createWordsFromOptions(formData.questions, user);
 
-        formData.synonyms = synonymIds;
-        formData.antonyms = antonymsIds;
-        formData.questions = newQuestions;
-        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
-        let status = formData.status ?? STATUS.CREATING_ENGLISH;
-        if (type === SUBMIT_TYPE.APPROVE) {
-          if (old_status === STATUS.REVIEW_ENGLISH) {
-            status = STATUS.CREATING_PUNJABI;
-          } else if (old_status === STATUS.REVIEW_FINAL) {
-            status = STATUS.ACTIVE;
-          }
-        }
-        formData.status = status;
-        return formData;
-      });
-    });
-  });
+    const synonymIds = existingSynonymsIds.concat(newSynonymsIds);
+    const antonymsIds = existingAntonymsIds.concat(newAntonymsIds);
+
+    formData.synonyms = synonymIds;
+    formData.antonyms = antonymsIds;
+    formData.questions = newQuestions;
+
+    formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
+    let status = formData.status ?? STATUS.CREATING_ENGLISH;
+    if (type === SUBMIT_TYPE.APPROVE) {
+      if (old_status === STATUS.REVIEW_ENGLISH) {
+        status = STATUS.CREATING_PUNJABI;
+      } else if (old_status === STATUS.REVIEW_FINAL) {
+        status = STATUS.ACTIVE;
+      }
+    }
+    formData.status = status;
+    return formData;
+  } catch (error) {
+    console.error(error);
+    return;
+  }
+};
+
+export const removeWord = async (word: WordType, setIsLoading: Dispatch<SetStateAction<boolean>>, navigate: NavigateFunction) => {
+  const response = window.confirm(`Are you sure you want to delete this word: ${word.word}? \n This action is not reversible.`);
+  if (response) {
+    setIsLoading(true);
+    const getWord = doc(firestore, `words/${word.id}`);
+    await removeWordFromSupport(word.id);
+    await removeWordFromWordlists(word.id);
+    await deleteWord(getWord);
+    await deleteSentenceByWordId(word.id);
+    await deleteQuestionByWordId(word.id);
+    setIsLoading(false);
+    navigate(routes.words);
+  }
 };

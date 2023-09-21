@@ -208,10 +208,9 @@ const AddWord = () => {
       } else {
         formData.sentences = sentences;
         formData.questions = setOptionsDataForSubmit(questions);
-        await createWordData(formData, synonyms, antonyms, user).then((wordData) => {
-          wordData.wordlists = selectedWordlists.map((docu) => docu.id);
-          addNewWord(wordData);
-        });
+        const wordData = await createWordData(formData, synonyms, antonyms, user);
+        wordData.wordlists = selectedWordlists.map((docu) => docu.id);
+        addNewWord(wordData);
       }
     }
   };
@@ -381,7 +380,7 @@ const AddWord = () => {
                   ))}
                 </Form.Select>
 
-                <Options id={`options${questionId}`} name="Options" word={question.options as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${questionId}`) as HTMLSelectElement).value} />
+                <Options id={`options${questionId}`} name="Options" word={question.options as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${questionId}`) as HTMLSelectElement)?.value} />
                 <Form.Control.Feedback type="invalid" itemID={`options${questionId}`}>
                   {t('FEEDBACK', { for: 'options' })}
                 </Form.Control.Feedback>

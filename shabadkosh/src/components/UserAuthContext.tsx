@@ -40,33 +40,33 @@ export const UserAuthContextProvider = ({ children }: { children:ReactElement })
   ) => signInWithEmailAndPassword(auth, email, password);
 
   const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider)
-      .then((userCredential) => {
-        const { uid, email, displayName } = userCredential.user;
-        return checkUser(uid, email ?? '').then((found) => {
-          if (!found) {
-            const localUser = doc(firestore, `users/${uid}`);
-            setDoc(localUser, {
-              role: roles.creator,
-              email,
-              displayName: displayName ?? email?.split('@')[0],
-              created_at: Timestamp.now(),
-              created_by: t('SELF'),
-              updated_at: Timestamp.now(),
-              updated_by: t('SELF'),
-            }).then(() => true);
-          } else {
-            return true;
-          }
-          setUser(userCredential.user);
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const { uid, email, displayName } = userCredential.user;
+      const found = await checkUser(uid, email ?? '');
+      if (!found) {
+        const localUser = doc(firestore, `users/${uid}`);
+        const created = await setDoc(localUser, {
+          role: roles.creator,
+          email,
+          displayName: displayName ?? email?.split('@')[0],
+          created_at: Timestamp.now(),
+          created_by: t('SELF'),
+          updated_at: Timestamp.now(),
+          updated_by: t('SELF'),
         });
-      }).catch((error: any) => {
-        if (Object.keys(errors).includes(error.code)) {
-          alert(errors[error.code]);
-        }
-        return false;
-      });
+        console.log(created);
+      } else {
+        return true;
+      }
+      setUser(userCredential.user);
+    } catch (error: any) {
+      if (Object.keys(errors).includes(error.code)) {
+        alert(errors[error.code]);
+      }
+      return false;
+    }
   };
 
   const signUp = async (
@@ -74,12 +74,13 @@ export const UserAuthContextProvider = ({ children }: { children:ReactElement })
     role: string,
     email: string,
     password: string,
-  ) => createUserWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
+  ) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userData = userCredential.user;
       const { uid, displayName } = userData;
       const localUser = doc(firestore, `users/${uid}`);
-      setDoc(localUser, {
+      await setDoc(localUser, {
         name,
         role,
         email,
@@ -95,13 +96,13 @@ export const UserAuthContextProvider = ({ children }: { children:ReactElement })
         alert(t('EMAIL_VERIFICATION_SENT'));
       });
       return true;
-    })
-    .catch((error: any) => {
+    } catch (error: any) {
       if (Object.keys(errors).includes(error.code)) {
         alert(errors[error.code]);
       }
       return false;
-    });
+    }
+  };
 
   const logOut = () => signOut(auth);
 

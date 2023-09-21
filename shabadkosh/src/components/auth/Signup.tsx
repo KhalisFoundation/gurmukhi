@@ -24,17 +24,15 @@ const Signup = () => {
     setErrorMessage('');
     try {
       const role = roles.creator;
-      await checkIfEmailUnique(email).then(async (unique) => {
-        if (unique) {
-          await signUp(diplayName, role, email, password).then((val: boolean) => {
-            if (val) {
-              navigate(routes.words);
-            }
-          });
-        } else {
-          setErrorMessage('Username already exists!');
+      const unique = await checkIfEmailUnique(email);
+      if (unique) {
+        const success = await signUp(diplayName, role, email, password);
+        if (success) {
+          navigate(routes.words);
         }
-      });
+      } else {
+        setErrorMessage('Username already exists!');
+      }
     } catch (error: any) {
       setErrorMessage(error.message);
     }

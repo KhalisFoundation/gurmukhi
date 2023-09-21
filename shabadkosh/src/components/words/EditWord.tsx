@@ -150,13 +150,12 @@ const EditWord = () => {
           is_for_support: docSnap.data().is_for_support ?? false,
           ...docSnap.data(),
         };
-        await getWordlistsByWordId(wordId ?? '').then((wordLists) => {
-          wordLists.forEach((wordlist) => {
-            localWordlist = [...localWordlist, {
-              id: wordlist.id,
-              name: wordlist.data().name,
-            }];
-          });
+        const wordLists = await getWordlistsByWordId(wordId ?? '');
+        wordLists.forEach((wordlist) => {
+          localWordlist = [...localWordlist, {
+            id: wordlist.id,
+            name: wordlist.data().name,
+          }];
         });
         setWord(newWordObj);
         const synList = allWords.filter((obj: MiniWord) => newWordObj.synonyms.includes(obj.id));
@@ -330,11 +329,10 @@ const EditWord = () => {
         formData.sentences = sentences ?? [];
         formData.questions = setOptionsDataForSubmit(questions);
         formData.is_for_support = support;
-        await createWordData(formData, synonyms, antonyms, user, type, word.status).then((wordData) => {
-          wordData.wordlists = selectedWordlists.map((docu) => docu.id);
-          setWordInWordlists(selectedWordlists, removedWordlists, wordId as string);
-          editWord(wordData);
-        });
+        const wordData = await createWordData(formData, synonyms, antonyms, user, type, word.status);
+        wordData.wordlists = selectedWordlists.map((docu) => docu.id);
+        setWordInWordlists(selectedWordlists, removedWordlists, wordId as string);
+        editWord(wordData);
       }
     }
   };
@@ -472,7 +470,7 @@ const EditWord = () => {
               <button
                 type="button"
                 className="btn btn-sm"
-                onClick={(e) => addNewQuestion(e, setQuestions)}
+                onClick={(e) => {console.log(questions); addNewQuestion(e, setQuestions);console.log(questions);}}
               >
                 {t('PLUS')}
               </button>
@@ -515,14 +513,14 @@ const EditWord = () => {
                   ))}
                 </Form.Select>
 
-                <Options id={`options${questionId}`} name="Options" word={question.options as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${questionId}`) as HTMLSelectElement).value} />
+                <Options id={`options${questionId}`} name="Options" word={(question.options ?? []) as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${questionId}`) as HTMLSelectElement)?.value} />
                 <Form.Control.Feedback type="invalid" itemID={`options${questionId}`}>
                   {t('FEEDBACK', { for: 'options' })}
                 </Form.Control.Feedback>
 
                 <Form.Label>{t('ANSWER')}</Form.Label>
                 <Form.Select id={`answer${questionId}`} value={question.answer} onChange={(e) => changeQuestion(e, questions, setQuestions)} required>
-                  {(question.options as Option[]).map((option, optionId) => (
+                  {question.options.length !== 0 && (question.options as Option[]).map((option, optionId) => (
                     <option key={`${option.option}${optionId}`} value={optionId}>{option.option}</option>
                   ))}
                 </Form.Select>

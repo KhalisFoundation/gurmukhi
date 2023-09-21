@@ -2,7 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 import {
   SentenceType, QuestionType, Option, TimestampType, MiniWord,
 } from '../../types';
-import { createMultipleValsAtOnce } from './controller';
+import { createMultipleWordsAtOnce } from './controller';
 import { qtypes } from '../constants';
 import { User } from 'firebase/auth';
 import { TFunction } from 'i18next';
@@ -93,7 +93,7 @@ export const createSupportWords = async (wordsList: MiniWord[], user: User) => {
     updated_by: user.email,
     updated_at: Timestamp.now(),
   }));
-  return createMultipleValsAtOnce(newWordsList, 'words');
+  return createMultipleWordsAtOnce(newWordsList, 'words');
 };
 
 export const createOptions = async (optionsList: Option[], user: User) => {
@@ -106,19 +106,19 @@ export const createOptions = async (optionsList: Option[], user: User) => {
     updated_by: user.email,
     updated_at: Timestamp.now(),
   }));
-  return createMultipleValsAtOnce(options, 'words');
+  return createMultipleWordsAtOnce(options, 'words');
 };
 
 export const createWordsFromOptions = async (questions: QuestionType[], user: User) => {
   return Promise.all(questions.map(async (question: QuestionType) => {
     if (question.type !== qtypes.MEANING) {
       const [newOptionsList, oldOptionsIdList] = seperateIdsAndNewOptions(question.options);
-      const optionIdsList = oldOptionsIdList;
+      const optionsIdList = oldOptionsIdList;
       const newOptionsIdList = await createOptions(newOptionsList as Option[], user);
-      optionIdsList.push(...newOptionsIdList);
+      optionsIdList.push(...newOptionsIdList);
       const questionData = {
         ...question,
-        options: optionIdsList,
+        options: optionsIdList,
       };
       return questionData;
     } else {
