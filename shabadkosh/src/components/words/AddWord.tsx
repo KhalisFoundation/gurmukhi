@@ -354,7 +354,7 @@ const AddWord = () => {
         created_by: user.email,
         updated_by: user.email,
         notes: removeExtraSpaces(form.notes),
-        is_for_support: form.is_for_support ?? false
+        is_for_support: form.is_for_support ?? false,
       })
         .then((word_id) => {
         // use return value of addWord to add sentences
