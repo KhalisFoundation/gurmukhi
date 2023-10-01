@@ -16,7 +16,7 @@ import {
   convertTimestampToDateString,
 } from '../util';
 import { useUserAuth } from '../UserAuthContext';
-import { NewWordlistType, WordlistType } from '../../types';
+import { NewWordlistType } from '../../types';
 
 const ViewWordlist = () => {
   const { wlid } = useParams();

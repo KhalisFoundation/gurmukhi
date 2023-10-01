@@ -1,6 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 import {
-  SentenceType, QuestionType, Option, TimestampType, MiniWord, WordType, NewUserType,
+  SentenceType, QuestionType, Option, TimestampType, MiniWord,
 } from '../../types';
 import { createMultipleWordsAtOnce } from './controller';
 import { qtypes } from '../constants';

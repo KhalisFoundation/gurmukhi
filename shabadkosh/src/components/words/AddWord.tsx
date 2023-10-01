@@ -11,7 +11,7 @@ import Multiselect from 'multiselect-react-dropdown';
 import { useTranslation } from 'react-i18next';
 import { SentenceType } from '../../types/sentence';
 import {
-  QuestionType, WordlistType, MiniWord, Option, MiniWordlist,
+  QuestionType, MiniWord, Option, MiniWordlist,
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
