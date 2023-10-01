@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/indent */
 import React, { FormEvent, useEffect, useState } from 'react';
 import {
-  Card, Button, Form,
+  Card, Button, Form, Alert,
 } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -50,7 +50,7 @@ import {
 
 const EditWord = () => {
   const { wordid: wordId } = useParams();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
   const getWord = doc(firestore, `words/${wordId}`);
   // const getSentences = doc(firestore, `sentences`, );
 
@@ -73,7 +73,7 @@ const EditWord = () => {
   const [sentences, setSentences] = useState<SentenceType[]>([]);
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [words, setWords] = useState<MiniWord[]>([]);
-  const [wordlists, setWordlists] = useState<WordlistType[]>([]);
+  const [wordlists, setWordlists] = useState<MiniWordlist[]>([]);
   const [synonyms, setSynonyms] = useState<MiniWord[]>([]);
   const [antonyms, setAntonyms] = useState<MiniWord[]>([]);
   const [support, setSupport] = useState<boolean>(false);
@@ -81,6 +81,7 @@ const EditWord = () => {
   const [removedWordlists, setRemovedWordlists] = useState<MiniWordlist[]>([]);
   const [validated, setValidated] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const { user } = useUserAuth();
   
   let statuses = [] as string[];
@@ -97,9 +98,9 @@ const EditWord = () => {
   }
 
   useEffect(() => {
-    let localWordlist = [] as WordlistType[];
+    let localWordlist = [] as MiniWordlist[];
     let allWords = [] as MiniWord[];
-    let allWordlists = [] as WordlistType[];
+    let allWordlists = [] as MiniWordlist[];
 
     const fetchWords = async () => {
       setIsLoading(true);
@@ -173,8 +174,8 @@ const EditWord = () => {
 
     const fetchSentence = async () => {
       setIsLoading(true);
-      const q = query(sentencesCollection, where('word_id', '==', wordId));
-      const querySnapshot = await getDocs(q);
+      const queryStatement = query(sentencesCollection, where('word_id', '==', wordId));
+      const querySnapshot = await getDocs(queryStatement);
       if (!querySnapshot.empty) {
         const newSentences = querySnapshot.docs.map((sentDoc) => ({
           id: sentDoc.id,
@@ -187,8 +188,8 @@ const EditWord = () => {
 
     const fetchQuestions = async () => {
       setIsLoading(true);
-      const q = query(questionsCollection, where('word_id', '==', wordId));
-      const querySnapshot = await getDocs(q);
+      const queryStatement = query(questionsCollection, where('word_id', '==', wordId));
+      const querySnapshot = await getDocs(queryStatement);
       if (!querySnapshot.empty) {
         const newQuestions = querySnapshot.docs.map((quesDoc) => {
           const options = quesDoc.data().options.map((option: Option | string) => {
@@ -248,7 +249,7 @@ const EditWord = () => {
     const updatedQuestions = questions.map((question, questionId) => {
       const lastOption = optionData[optionData.length - 1];
       if (lastOption.option && lastOption.option.includes(' ') && questionType !== qtypes.MEANING) {
-        alert(t('OPTION_NO_SPACES'));
+        alert(text('OPTION_NO_SPACES'));
         return question;
       }
       switch (id) {
@@ -311,25 +312,25 @@ const EditWord = () => {
     formData.translation = formData.translation.toLowerCase();
 
     if (synonyms.includes(formData.word) || antonyms.includes(formData.word)) {
-      alert(t('WORD_CANNOT_BE_OWN'));
+      alert(text('WORD_CANNOT_BE_OWN'));
       setIsLoading(false);
       return;
     }
 
     const wordIsNew = await isWordNew(formData.word, wordId);
     if (!wordIsNew) {
-      alert(t('WORD_ALREADY_EXISTS'));
+      alert(text('WORD_ALREADY_EXISTS'));
       setIsLoading(false);
     } else {
       const validOptions = hasValidOptions(questions);
       if (!validOptions) {
-        alert(t('ALERT_QUESTION_OPTIONS'));
+        alert(text('ALERT_QUESTION_OPTIONS'));
         setIsLoading(false);
       } else {
         formData.sentences = sentences ?? [];
         formData.questions = setOptionsDataForSubmit(questions);
         formData.is_for_support = support;
-        const wordData = await createWordData(formData, synonyms, antonyms, user, type, word.status);
+        const wordData = await createWordData(formData, synonyms, antonyms, user, setErrorMessage, type, word.status);
         wordData.wordlists = selectedWordlists.map((docu) => docu.id);
         setWordInWordlists(selectedWordlists, removedWordlists, wordId as string);
         editWord(wordData);
@@ -343,50 +344,50 @@ const EditWord = () => {
   const navigate = useNavigate();
 
   if (isLoading) {
-    return <h2>{t('LOADING')}</h2>;
+    return <h2>{text('LOADING')}</h2>;
   }
   if (!found) {
-    return <h2>{t('NOT_FOUND', { what: t('WORD') })}</h2>;
+    return <h2>{text('NOT_FOUND', { what: text('WORD') })}</h2>;
   }
   if (!editable.includes(word.status ?? STATUS.CREATING_ENGLISH)) { navigate(-1); }
   return (
     <div className="d-flex flex-column justify-content-center align-items-center background">
-      <h2>{t('EDIT_TEXT', { for: t('WORD') })}</h2>
+      <h2>{text('EDIT_TEXT', { for: text('WORD') })}</h2>
       <Form className="rounded p-4 p-sm-3" hidden={submitted} noValidate validated={validated} onSubmit={handleSubmit}>
         <Form.Group className="mb-3" controlId="word" onChange={handleChange}>
-          <Form.Label>{t('WORD')}</Form.Label>
+          <Form.Label>{text('WORD')}</Form.Label>
           <Form.Control type="text" placeholder="ਸ਼ਬਦ" pattern={regex.gurmukhiWordRegex} defaultValue={word.word} required />
           <Form.Control.Feedback type="invalid">
-            {t('FEEDBACK_GURMUKHI', { for: 'a word' })}
+            {text('FEEDBACK_GURMUKHI', { for: 'a word' })}
           </Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="translation" onChange={handleChange}>
-          <Form.Label>{t('TRANSLATION')}</Form.Label>
+          <Form.Label>{text('TRANSLATION')}</Form.Label>
           <Form.Control type="text" placeholder="Enter translation" pattern={regex.translationRegex} defaultValue={word.translation} required />
           <Form.Control.Feedback type="invalid">
-            {t('FEEDBACK_ENGLISH', { for: 'translation' })}
+            {text('FEEDBACK_ENGLISH', { for: 'translation' })}
           </Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="meaning_punjabi" onChange={handleChange}>
-          <Form.Label>{t('MEANING_PUNJABI')}</Form.Label>
+          <Form.Label>{text('MEANING_PUNJABI')}</Form.Label>
           <Form.Control type="text" placeholder="ਇੱਥੇ ਅਰਥ ਦਰਜ ਕਰੋ" pattern={regex.gurmukhiSentenceRegex} defaultValue={word.meaning_punjabi} />
           <Form.Control.Feedback type="invalid">
-            {t('FEEDBACK_GURMUKHI', { for: 'meaning' })}
+            {text('FEEDBACK_GURMUKHI', { for: 'meaning' })}
           </Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="meaning_english" onChange={handleChange}>
-          <Form.Label>{t('MEANING_ENGLISH')}</Form.Label>
+          <Form.Label>{text('MEANING_ENGLISH')}</Form.Label>
           <Form.Control type="text" placeholder="Enter meaning" pattern={regex.translationRegex} defaultValue={word.meaning_english} />
           <Form.Control.Feedback type="invalid">
-            {t('FEEDBACK_ENGLISH', { for: 'meaning' })}
+            {text('FEEDBACK_ENGLISH', { for: 'meaning' })}
           </Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="part_of_speech" onChange={handleChange}>
-          <Form.Label>{t('PART_OF_SPEECH')}</Form.Label>
+          <Form.Label>{text('PART_OF_SPEECH')}</Form.Label>
           <Form.Select aria-label="Choose part of speech" defaultValue={word.part_of_speech ?? PARTS_OF_SPEECH.NOUN}>
             {Object.values(PARTS_OF_SPEECH).map((partOfSpeech) => (
               <option key={partOfSpeech} value={partOfSpeech}>{capitalize(partOfSpeech)}</option>
@@ -403,12 +404,12 @@ const EditWord = () => {
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="images" onChange={handleChange}>
-          <Form.Label>{t('IMAGES')}</Form.Label>
+          <Form.Label>{text('IMAGES')}</Form.Label>
           <Form.Control type="text" placeholder="imgUrl1, imgUrl2, ..." defaultValue={word.images} />
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="words">
-          <Form.Label>{t('CHOOSE_WORDLIST')}</Form.Label>
+          <Form.Label>{text('CHOOSE_WORDLIST')}</Form.Label>
           <Multiselect
             options={wordlists}
             displayValue="name"
@@ -423,11 +424,11 @@ const EditWord = () => {
           <Form.Label
             className="d-flex flex-row align-items-center justify-content-between w-100"
           >
-            <h5>{capitalize(t('SENTENCES'))}</h5>
+            <h5>{capitalize(text('SENTENCES'))}</h5>
             <div
               className="d-flex align-items-center"
             >
-              <button type="button" className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{t('PLUS')}</button>
+              <button type="button" className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{text('PLUS')}</button>
             </div>
           </Form.Label>
           {sentences && sentences.length ? sentences.map((sentence, sentenceId) => (
@@ -436,43 +437,43 @@ const EditWord = () => {
               className="d-flex flex-column justify-content-between mb-3"
             >
               <div className="d-flex justify-content-between align-items-center">
-                <b>{t('SENTENCE_WITH_NUM', { num: sentenceId + 1 })}</b>
-                <button type="button" className="btn btn-sm" onClick={(e) => removeData(sentenceId, e, t, sentences, setSentences, SUBMIT_TYPE.EDIT, DATATYPES.SENTENCE, word.word)}>{t('BIN')}</button>
+                <b>{text('SENTENCE_WITH_NUM', { num: sentenceId + 1 })}</b>
+                <button type="button" className="btn btn-sm" onClick={(e) => removeData(sentenceId, e, text, sentences, setSentences, SUBMIT_TYPE.EDIT, DATATYPES.SENTENCE, word.word)}>{text('BIN')}</button>
               </div>
               <div>
-                {t('SENTENCE')}
+                {text('SENTENCE')}
                 <Form.Control id={`sentence${sentenceId}`} className="m-1" type="text" value={sentence.sentence} placeholder="ਇੱਥੇ ਵਾਕ ਦਰਜ ਕਰੋ" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.gurmukhiSentenceRegex} />
                 <Form.Control.Feedback type="invalid" itemID={`sentence${sentenceId}`}>
-                  {t('FEEDBACK_GURMUKHI', { for: 'sentence' })}
+                  {text('FEEDBACK_GURMUKHI', { for: 'sentence' })}
                 </Form.Control.Feedback>
                 <br />
 
-                {t('TRANSLATION')}
+                {text('TRANSLATION')}
                 <Form.Control id={`translation${sentenceId}`} className="m-1" type="text" value={sentence.translation} placeholder="Enter translation" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.translationRegex} required />
                 <Form.Control.Feedback type="invalid" itemID={`translation${sentenceId}`}>
-                  {t('FEEDBACK_ENGLISH', { for: 'translation' })}
+                  {text('FEEDBACK_ENGLISH', { for: 'translation' })}
                 </Form.Control.Feedback>
               </div>
               <hr />
             </div>
           )) : null}
-          <Button className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{t('ADD_NEW', { what: t('SENTENCE') })}</Button>
+          <Button className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{text('ADD_NEW', { what: text('SENTENCE') })}</Button>
         </Form.Group>
 
         <Form.Group className="mb-3" onChange={handleChange}>
           <Form.Label
             className="d-flex flex-row align-items-center justify-content-between w-100"
           >
-            <h5>{capitalize(t('QUESTIONS'))}</h5>
+            <h5>{capitalize(text('QUESTIONS'))}</h5>
             <div
               className="d-flex align-items-center"
             >
               <button
                 type="button"
                 className="btn btn-sm"
-                onClick={(e) => {console.log(questions); addNewQuestion(e, setQuestions);console.log(questions);}}
+                onClick={(e) => addNewQuestion(e, setQuestions)}
               >
-                {t('PLUS')}
+                {text('PLUS')}
               </button>
             </div>
           </Form.Label>
@@ -482,31 +483,31 @@ const EditWord = () => {
               className="d-flex flex-column justify-content-between"
             >
               <div className="d-flex justify-content-between align-items-center">
-                <b>{t('QUESTION_WITH_NUM', { num: questionId + 1 })}</b>
+                <b>{text('QUESTION_WITH_NUM', { num: questionId + 1 })}</b>
                 <button
                   type="button"
                   className="btn btn-sm"
-                  onClick={(e) => removeData(questionId, e, t, questions, setQuestions, SUBMIT_TYPE.EDIT, DATATYPES.QUESTION, word.word)}
+                  onClick={(e) => removeData(questionId, e, text, questions, setQuestions, SUBMIT_TYPE.EDIT, DATATYPES.QUESTION, word.word)}
                 >
-                  {t('BIN')}
+                  {text('BIN')}
                 </button>
               </div>
               <div>
-                <Form.Label>{t('QUESTION')}</Form.Label>
+                <Form.Label>{text('QUESTION')}</Form.Label>
                 <Form.Control id={`question${questionId}`} className="m-1" type="text" value={question.question} placeholder="ਇੱਥੇ ਸਵਾਲ ਦਰਜ ਕਰੋ" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.gurmukhiQuestionRegex} required />
                 <Form.Control.Feedback type="invalid" itemID={`question${questionId}`}>
-                  {t('FEEDBACK_GURMUKHI', { for: 'question' })}
+                  {text('FEEDBACK_GURMUKHI', { for: 'question' })}
                 </Form.Control.Feedback>
                 <br />
 
-                <Form.Label>{t('TRANSLATION')}</Form.Label>
+                <Form.Label>{text('TRANSLATION')}</Form.Label>
                 <Form.Control id={`qtranslation${questionId}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.englishQuestionTranslationRegex} />
                 <Form.Control.Feedback type="invalid" itemID={`qtranslation${questionId}`}>
-                  {t('FEEDBACK_ENGLISH', { for: 'translation' })}
+                  {text('FEEDBACK_ENGLISH', { for: 'translation' })}
                 </Form.Control.Feedback>
                 <br />
 
-                <Form.Label>{t('TYPE')}</Form.Label>
+                <Form.Label>{text('TYPE')}</Form.Label>
                 <Form.Select aria-label="Default select example" id={`type${questionId}`} value={question.type ?? 'context'} onChange={(e) => changeQuestion(e, questions, setQuestions)}>
                   {Object.values(qtypes).map((questionType) => (
                     <option key={questionType} value={questionType}>{questionType}</option>
@@ -515,33 +516,33 @@ const EditWord = () => {
 
                 <Options id={`options${questionId}`} name="Options" word={(question.options ?? []) as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${questionId}`) as HTMLSelectElement)?.value} />
                 <Form.Control.Feedback type="invalid" itemID={`options${questionId}`}>
-                  {t('FEEDBACK', { for: 'options' })}
+                  {text('FEEDBACK', { for: 'options' })}
                 </Form.Control.Feedback>
 
-                <Form.Label>{t('ANSWER')}</Form.Label>
+                <Form.Label>{text('ANSWER')}</Form.Label>
                 <Form.Select id={`answer${questionId}`} value={question.answer} onChange={(e) => changeQuestion(e, questions, setQuestions)} required>
                   {question.options.length !== 0 && (question.options as Option[]).map((option, optionId) => (
                     <option key={`${option.option}${optionId}`} value={optionId}>{option.option}</option>
                   ))}
                 </Form.Select>
                 <Form.Control.Feedback type="invalid" itemID={`answer${questionId}`}>
-                  {t('FEEDBACK', { for: 'answer' })}
+                  {text('FEEDBACK', { for: 'answer' })}
                 </Form.Control.Feedback>
               </div>
               <hr />
             </div>
           )) : null}
-          <Button className="btn btn-sm" onClick={(e) => addNewQuestion(e, setQuestions)}>{t('ADD_NEW', { what: t('QUESTION') })}</Button>
+          <Button className="btn btn-sm" onClick={(e) => addNewQuestion(e, setQuestions)}>{text('ADD_NEW', { what: text('QUESTION') })}</Button>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="notes" onChange={handleChange}>
-          <Form.Label>{t('NOTES')}</Form.Label>
+          <Form.Label>{text('NOTES')}</Form.Label>
           <Form.Control as="textarea" rows={3} placeholder="Enter notes" defaultValue={word.notes} />
         </Form.Group>
 
         <div className="d-flex justify-content-between align-items-center">
           <Form.Group className="mb-3" controlId="status" onChange={handleChange}>
-            <Form.Label>{t('STATUS')}</Form.Label>
+            <Form.Label>{text('STATUS')}</Form.Label>
             <Form.Select aria-label="Default select example">
               {statuses.map((status) => {
                 const value = splitAndCapitalize(status);
@@ -563,13 +564,13 @@ const EditWord = () => {
             type="switch"
             checked={support}
             onChange={handleSupport}
-            label={t('SUPPORT_LABEL')}
+            label={text('SUPPORT_LABEL')}
           />
         </div>
 
         <div className="d-flex justify-content-around">
           <Button variant="primary" type="submit">
-            {t('SUBMIT')}
+            {text('SUBMIT')}
           </Button>
           {word.status && [
             roles.reviewer,
@@ -580,17 +581,18 @@ const EditWord = () => {
           ].includes(word.status)
             ? (
               <Button variant="primary" type="button" onClick={handleApprove}>
-                {t('APPROVE')}
+                {text('APPROVE')}
               </Button>
             )
             : null }
         </div>
       </Form>
+      {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
       {submitted ? (
         <Card className="d-flex justify-content-center align-items-center background mt-4">
           <Card.Body className="rounded p-4 p-sm-3">
-            <h3>{t('SUCCESS_UPDATE', { for: t('WORD') })}</h3>
-            <Button variant="primary" onClick={() => navigate(routes.words)}>{t('BACK_TO', { page: 'words' })}</Button>
+            <h3>{text('SUCCESS_UPDATE', { for: text('WORD') })}</h3>
+            <Button variant="primary" onClick={() => navigate(routes.words)}>{text('BACK_TO', { page: 'words' })}</Button>
           </Card.Body>
         </Card>
       ) : null}

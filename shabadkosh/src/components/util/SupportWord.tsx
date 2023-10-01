@@ -24,7 +24,7 @@ const SupportWord = ({
   const [showNewForm, setShowNewForm] = useState(false);
   const [supportWord, setSupportWord] = useState<string>('');
   const [translation, setTranslation] = useState<string>('');
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
   const onViewToggle = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
@@ -55,14 +55,14 @@ const SupportWord = ({
           if (!alreadyInWords) {
             setWord((prev) => [...prev, optionData]);
           } else {
-            alert(`${name.slice(0, -1)} ${optionData.value} already exists, choose it from the dropdown`);
+            alert(text('ALREADY_EXISTS', { what: name.slice(0, -1) + optionData.value }));
           }
         }
 
         setSupportWord('');
         setTranslation('');
       } else {
-        alert(`Invalid value: ${option}`);
+        alert(text('INVALID_VALUE', { val: option }));
       }
     }
   };
@@ -85,7 +85,7 @@ const SupportWord = ({
         className="btn btn-sm"
         onClick={onViewToggle}
       >
-        {showNewForm ? t('MINUS') : t('PLUS')}
+        {showNewForm ? text('MINUS') : text('PLUS')}
       </button>
 
       <Multiselect
@@ -102,11 +102,11 @@ const SupportWord = ({
         className={showNewForm ? 'd-flex justify-content-around ' : 'd-none'}
       >
         <div>
-          {['synonyms', 'antonyms'].includes(type) ? t('WORD') : capitalize(type)}
+          {['synonyms', 'antonyms'].includes(type) ? text('WORD') : capitalize(type)}
           <Form.Control type="text" placeholder={placeholder} pattern={regex.gurmukhiWordRegex} value={supportWord} onChange={(event) => setSupportWord(event.target.value)} />
         </div>
         <div>
-          {t('TRANSLATION')}
+          {text('TRANSLATION')}
           <Form.Control type="text" placeholder="Enter translation" pattern={regex.englishSentenceRegex} value={translation} onChange={(event) => setTranslation(event.target.value)} />
         </div>
         <div>
@@ -115,14 +115,14 @@ const SupportWord = ({
             className="btn btn-sm fs-5 me-2 p-0"
             onClick={(event) => addNew(event, `${supportWord}:${translation}`)}
           >
-            {t('CHECK')}
+            {text('CHECK')}
           </button>
           <button
             type="button"
             className="btn btn-sm fs-5 ms-2 p-0"
             onClick={remWord}
           >
-            {t('CROSS')}
+            {text('CROSS')}
           </button>
         </div>
       </div>

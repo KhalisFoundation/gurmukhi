@@ -17,7 +17,7 @@ const Signup = () => {
   const [password, setPassword] = useState('');
   const { signUp } = useUserAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,14 +40,14 @@ const Signup = () => {
 
   return (
     <div className="container justify-content-center">
-      <h2 className="mb-3">{t('KOSH_SIGNUP')}</h2>
+      <h2 className="mb-3">{text('KOSH_SIGNUP')}</h2>
       {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
       <Form
         onSubmit={handleSubmit}
         className="w-100"
       >
         <Form.Group className="mb-3" controlId="formBasicName">
-          <Form.Label>{t('FULL_NAME')}</Form.Label>
+          <Form.Label>{text('FULL_NAME')}</Form.Label>
           <Form.Control
             type="name"
             placeholder="Name"
@@ -56,7 +56,7 @@ const Signup = () => {
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="formBasicRole">
-          <Form.Label>{t('ROLE')}</Form.Label>
+          <Form.Label>{text('ROLE')}</Form.Label>
           <Form.Control
             type="role"
             placeholder="Role"
@@ -66,7 +66,7 @@ const Signup = () => {
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="formBasicEmail">
-          <Form.Label>{t('EMAIL')}</Form.Label>
+          <Form.Label>{text('EMAIL')}</Form.Label>
           <Form.Control
             type="email"
             placeholder="Email address"
@@ -75,7 +75,7 @@ const Signup = () => {
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="formBasicPassword">
-          <Form.Label>{t('PASSWORD')}</Form.Label>
+          <Form.Label>{text('PASSWORD')}</Form.Label>
           <Form.Control
             type="password"
             placeholder="Password"
@@ -85,14 +85,14 @@ const Signup = () => {
 
         <div className="d-grid gap-2">
           <Button variant="primary" type="submit">
-            {t('SIGNUP')}
+            {text('SIGNUP')}
           </Button>
         </div>
         <div
           className="p-4 box mt-3 text-center bg-white"
         >
-          {t('ALREADY_HAVE_ACC')}
-          <Link to="/">{t('LOGIN')}</Link>
+          {text('ALREADY_HAVE_ACC')}
+          <Link to="/">{text('LOGIN')}</Link>
         </div>
       </Form>
     </div>

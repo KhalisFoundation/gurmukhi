@@ -16,7 +16,7 @@ const Search = () => {
   const [words, setWords] = useState<NewWordType[]>([]);
   const [filteredWords, setFilteredWords] = useState<NewWordType[]>([]);
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -60,13 +60,13 @@ const Search = () => {
   }, []);
 
   if (isLoading) {
-    return <h2>{t('LOADING')}</h2>;
+    return <h2>{text('LOADING')}</h2>;
   }
   return (
     <div className="container justify-content-center align-items-center">
       <Form onSubmit={handleSearch}>
         <Form.Group controlId="formBasicSearch">
-          <Form.Label>{t('SEARCH')}</Form.Label>
+          <Form.Label>{text('SEARCH')}</Form.Label>
           <Form.Control
             type="text"
             placeholder="Enter search term"
@@ -82,17 +82,17 @@ const Search = () => {
         <thead>
           <tr>
             <th>#</th>
-            <th>{t('WORD')}</th>
-            <th>{t('TRANSLATION')}</th>
-            <th>{t('SYNONYMS')}</th>
-            <th>{t('ANTONYMS')}</th>
-            <th>{t('STATUS')}</th>
-            <th>{t('MEANING_PUNJABI')}</th>
-            <th>{t('MEANING_ENGLISH')}</th>
-            <th>{t('CREATED_BY')}</th>
-            <th>{t('CREATED_AT')}</th>
-            <th>{t('UPDATED_BY')}</th>
-            <th>{t('UPDATED_AT')}</th>
+            <th>{text('WORD')}</th>
+            <th>{text('TRANSLATION')}</th>
+            <th>{text('SYNONYMS')}</th>
+            <th>{text('ANTONYMS')}</th>
+            <th>{text('STATUS')}</th>
+            <th>{text('MEANING_PUNJABI')}</th>
+            <th>{text('MEANING_ENGLISH')}</th>
+            <th>{text('CREATED_BY')}</th>
+            <th>{text('CREATED_AT')}</th>
+            <th>{text('UPDATED_BY')}</th>
+            <th>{text('UPDATED_AT')}</th>
           </tr>
         </thead>
         <tbody>
@@ -103,13 +103,13 @@ const Search = () => {
               <td>{word.translation}</td>
               <td>{word.synonyms?.join(', ')}</td>
               <td>{word.antonyms?.join(', ')}</td>
-              <td>{word.status ?? (word.is_for_support ? t('SYN_OR_ANT') : '') }</td>
+              <td>{word.status ?? (word.is_for_support ? text('SYN_OR_ANT') : '') }</td>
               <td>{word.meaning_punjabi}</td>
               <td>{word.meaning_english}</td>
               <td>{word.created_by}</td>
-              <td>{convertTimestampToDateString(word.created_at, t)}</td>
+              <td>{convertTimestampToDateString(word.created_at, text)}</td>
               <td>{word.updated_by}</td>
-              <td>{convertTimestampToDateString(word.updated_at, t)}</td>
+              <td>{convertTimestampToDateString(word.updated_at, text)}</td>
             </tr>
           ))}
         </tbody>

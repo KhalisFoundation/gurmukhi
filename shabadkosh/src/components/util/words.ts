@@ -8,7 +8,7 @@ import { SentenceType, QuestionType, NewWordType, MiniWord, WordType } from '../
 import { firestore } from '../../firebase';
 import { addQuestion, addSentence, addWord, addWordIdToWordlists, deleteQuestion, deleteQuestionByWordId, deleteSentence, deleteSentenceByWordId, deleteWord, removeWordFromSupport, removeWordFromWordlists, updateQuestion, updateSentence, updateWord } from './controller';
 import { DATATYPES, STATUS, qtypes } from '../constants';
-import { createSupportWords, createWordsFromOptions, seperateIdsAndNewWords, splitAndClear } from './utils';
+import { createSupportWords, createWordsFromOptions, separateIdsAndNewWords, splitAndClear } from './utils';
 import SUBMIT_TYPE from '../constants/submit';
 import PARTS_OF_SPEECH from '../constants/pos';
 import routes from '../constants/routes';
@@ -171,7 +171,7 @@ export const saveWord = async (
     word: form.word,
     translation: form.translation,
     meaning_punjabi: form.meaning_punjabi ?? '',
-    meaning_english: form.meaning_english ?? '',
+    meaning_english: form.meaning_english,
     part_of_speech: form.part_of_speech ?? '',
     synonyms: form.synonyms,
     antonyms: form.antonyms,
@@ -242,11 +242,12 @@ export const createWordData = async (
   synonyms: MiniWord[],
   antonyms: MiniWord[],
   user: User,
+  setErrorMessage: Dispatch<SetStateAction<string>>,
   type?: string,
   old_status?: string,
 ) => {
-  const [newSynonymsList, existingSynonymsIds] = seperateIdsAndNewWords(synonyms);
-  const [newAntonymsList, existingAntonymsIds] = seperateIdsAndNewWords(antonyms);
+  const [newSynonymsList, existingSynonymsIds] = separateIdsAndNewWords(synonyms);
+  const [newAntonymsList, existingAntonymsIds] = separateIdsAndNewWords(antonyms);
 
   try {
     const newSynonymsIds = await createSupportWords(newSynonymsList, user);
@@ -271,14 +272,19 @@ export const createWordData = async (
     }
     formData.status = status;
     return formData;
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    setErrorMessage(error.message);
     return;
   }
 };
 
-export const removeWord = async (word: WordType, setIsLoading: Dispatch<SetStateAction<boolean>>, navigate: NavigateFunction) => {
-  const response = window.confirm(`Are you sure you want to delete this word: ${word.word}? \n This action is not reversible.`);
+export const removeWord = async (
+  word: WordType,
+  setIsLoading: Dispatch<SetStateAction<boolean>>,
+  navigate: NavigateFunction,
+  text: TFunction<'translation', undefined>,
+) => {
+  const response = window.confirm(text('DELETE_CONFIRM', { what: word.word }));
   if (response) {
     setIsLoading(true);
     const getWord = doc(firestore, `words/${word.id}`);

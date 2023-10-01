@@ -9,7 +9,7 @@ import errors from '../constants/error';
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [emailMessage, setEmailMessage] = useState(false);
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -29,11 +29,11 @@ const ForgotPassword = () => {
     <div className="d-flex justify-content-center">
       {
         emailMessage
-          ? <h3>{t('PWD_RESET_EMAIL_SENT')}</h3>
+          ? <h3>{text('PWD_RESET_EMAIL_SENT')}</h3>
           : (
             <Form onSubmit={handleSubmit}>
               <FormGroup controlId="email">
-                <Form.Label>{t('EMAIL')}</Form.Label>
+                <Form.Label>{text('EMAIL')}</Form.Label>
                 <Form.Control
                   type="text"
                   placeholder="Enter email"
@@ -43,7 +43,7 @@ const ForgotPassword = () => {
               </FormGroup>
               <div className="d-grid gap-2">
                 <Button variant="primary" type="submit">
-                  {t('SUBMIT')}
+                  {text('SUBMIT')}
                 </Button>
               </div>
             </Form>

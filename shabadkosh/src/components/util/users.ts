@@ -7,14 +7,14 @@ import { UserProfile } from 'firebase/auth';
 export const usersCollection = collection(db, 'users');
 
 export const checkIfUsernameUnique = async (username: string) => {
-  const q = query(usersCollection, where('username', '==', username));
-  const usersSnapshot = await getDocs(q);
+  const queryStatement = query(usersCollection, where('username', '==', username));
+  const usersSnapshot = await getDocs(queryStatement);
   return usersSnapshot.empty;
 };
 
 export const checkIfEmailUnique = async (email: string) => {
-  const q = query(usersCollection, where('email', '==', email));
-  const usersSnapshot = await getDocs(q);
+  const queryStatement = query(usersCollection, where('email', '==', email));
+  const usersSnapshot = await getDocs(queryStatement);
   return usersSnapshot.empty;
 };
 

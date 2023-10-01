@@ -1,13 +1,13 @@
 import { Timestamp } from 'firebase/firestore';
 import {
-  SentenceType, QuestionType, Option, TimestampType, MiniWord,
+  SentenceType, QuestionType, Option, TimestampType, MiniWord, WordType, NewUserType,
 } from '../../types';
 import { createMultipleWordsAtOnce } from './controller';
 import { qtypes } from '../constants';
 import { User } from 'firebase/auth';
 import { TFunction } from 'i18next';
 
-export const seperateIdsAndNewWords = (words: MiniWord[]): [MiniWord[], string[]] => {
+export const separateIdsAndNewWords = (words: MiniWord[]): [MiniWord[], string[]] => {
   const newWordsList = [] as MiniWord[];
   const wordsIdList = [] as string[];
   words.forEach((word: MiniWord) => {
@@ -25,7 +25,7 @@ export const seperateIdsAndNewWords = (words: MiniWord[]): [MiniWord[], string[]
   return [newWordsList, wordsIdList];
 };
 
-export const seperateIdsAndNewSentences = (sentences: SentenceType[]): [SentenceType[], string[]] => {
+export const separateIdsAndNewSentences = (sentences: SentenceType[]): [SentenceType[], string[]] => {
   const newSentencesList = [] as SentenceType[];
   const sentencesIdList = [] as string[];
   sentences.forEach((sentence: SentenceType) => {
@@ -47,24 +47,24 @@ export const seperateIdsAndNewSentences = (sentences: SentenceType[]): [Sentence
 };
 
 export const hasValidOptions = (questions: QuestionType[]): boolean => {
-  let valid = questions ? true : false;
-  questions.forEach((question: QuestionType) => {
+  if (!questions) return false;
+  
+  for (const question of questions) {
     if (question.type !== qtypes.MEANING) {
-      question.options.forEach((option: Option) => {
-        if (!Object.keys(option).includes('id') && option.option) {
-          if (option.option.includes(' ')) {
-            valid = false;
-          }
+      for (const option of question.options) {
+        if (!('id' in option) && option.option && option.option.includes(' ')) {
+          return false;
         }
-      });
+      }
     }
-  });
-  return valid;
+  }
+
+  return true;
 };
 
-export const seperateIdsAndNewOptions = (options: Option[]): [Option[], string[]] => {
-  const newOptionsList = [] as Option[];
-  const optionIdsList = [] as string[];
+export const separateIdsAndNewOptions = (options: Option[]): [Option[], string[]] => {
+  const newOptionsList: Option[] = [];
+  const optionIdsList: string[] = [];
   options.forEach((option: Option) => {
     const duplicate = newOptionsList.find(
       (obj) => obj.option === option.option,
@@ -112,7 +112,7 @@ export const createOptions = async (optionsList: Option[], user: User) => {
 export const createWordsFromOptions = async (questions: QuestionType[], user: User) => {
   return Promise.all(questions.map(async (question: QuestionType) => {
     if (question.type !== qtypes.MEANING) {
-      const [newOptionsList, oldOptionsIdList] = seperateIdsAndNewOptions(question.options);
+      const [newOptionsList, oldOptionsIdList] = separateIdsAndNewOptions(question.options);
       const optionsIdList = oldOptionsIdList;
       const newOptionsIdList = await createOptions(newOptionsList as Option[], user);
       optionsIdList.push(...newOptionsIdList);
@@ -124,7 +124,7 @@ export const createWordsFromOptions = async (questions: QuestionType[], user: Us
     } else {
       return question;
     }
-  })).then((data) => data);
+  }));
 };
 
 export const setOptionsDataForSubmit = (questionsData: QuestionType[]): QuestionType[] => {
@@ -143,9 +143,9 @@ export const setOptionsDataForSubmit = (questionsData: QuestionType[]): Question
   return newQuestions;
 };
 
-export const convertTimestampToDateString = (timestamp: TimestampType | null, t: TFunction<'translation', undefined>) => {
+export const convertTimestampToDateString = (timestamp: TimestampType | null, text: TFunction<'translation', undefined>) => {
   if (!timestamp) {
-    return t('INVALID_TIME');
+    return text('INVALID_VALUE', { val: 'time' });
   }
   const timestampDate = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
   return timestampDate.toLocaleString('en-us', {
@@ -153,9 +153,9 @@ export const convertTimestampToDateString = (timestamp: TimestampType | null, t:
   });
 };
 
-export const convertTimestampToDate = (timestamp: TimestampType, t: TFunction<'translation', undefined>) => {
+export const convertTimestampToDate = (timestamp: TimestampType, text: TFunction<'translation', undefined>) => {
   if (!timestamp) {
-    return t('INVALID_TIME');
+    return text('INVALID_VALUE', { val: 'time' });
   }
   const timestampDate = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
   return timestampDate;
@@ -165,16 +165,16 @@ export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.sli
 
 export const splitAndCapitalize = (str: string) => str.split('-').map((ele: string) => capitalize(ele.trim())).join(' ');
 
-export const splitAndClear = (data: string | string[]) => {
+export const splitAndClear = (stringData: string | string[]) => {
   // returns empty array if data is null or undefined
-  if (!data) {
+  if (!stringData) {
     return [];
   }
 
-  let splitList = data;
-  // if data is string, split it
-  if (typeof data === 'string') {
-    splitList = data.split(',').map((ele: string) => ele.trim());
+  let splitList = stringData;
+  // if str is string, split it
+  if (typeof stringData === 'string') {
+    splitList = stringData.split(',').map((ele: string) => ele.trim());
   }
 
   // remove empty strings
@@ -182,10 +182,10 @@ export const splitAndClear = (data: string | string[]) => {
   return splitArray;
 };
 
-export const compareUpdatedAt = (word1: any, word2: any) => {
-  if (word1.updated_at < word2.updated_at) {
+export const compareUpdatedAt = (timestamp1: TimestampType, timestamp2: TimestampType) => {
+  if (timestamp1 < timestamp2) {
     return 1;
-  } if (word1.updated_at > word2.updated_at) {
+  } if (timestamp1 > timestamp2) {
     return -1;
   }
   return 0;

@@ -32,7 +32,7 @@ const userAuthContext = createContext<any>(null);
 
 export const UserAuthContextProvider = ({ children }: { children:ReactElement }) => {
   const [user, setUser] = useState({});
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
   const logIn = (
     email: string,
@@ -47,16 +47,15 @@ export const UserAuthContextProvider = ({ children }: { children:ReactElement })
       const found = await checkUser(uid, email ?? '');
       if (!found) {
         const localUser = doc(firestore, `users/${uid}`);
-        const created = await setDoc(localUser, {
+        await setDoc(localUser, {
           role: roles.creator,
           email,
           displayName: displayName ?? email?.split('@')[0],
           created_at: Timestamp.now(),
-          created_by: t('SELF'),
+          created_by: text('SELF'),
           updated_at: Timestamp.now(),
-          updated_by: t('SELF'),
+          updated_by: text('SELF'),
         });
-        console.log(created);
       } else {
         return true;
       }
@@ -86,14 +85,14 @@ export const UserAuthContextProvider = ({ children }: { children:ReactElement })
         email,
         displayName: displayName ?? name,
         created_at: Timestamp.now(),
-        created_by: t('SELF'),
+        created_by: text('SELF'),
         updated_at: Timestamp.now(),
-        updated_by: t('SELF'),
+        updated_by: text('SELF'),
       });
       setUser(userData);
 
       sendEmailVerification(auth.currentUser ?? userData).then(() => {
-        alert(t('EMAIL_VERIFICATION_SENT'));
+        alert(text('EMAIL_VERIFICATION_SENT'));
       });
       return true;
     } catch (error: any) {

@@ -16,7 +16,7 @@ const Login = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const { logIn, signInWithGoogle, logOut } = useUserAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -46,14 +46,14 @@ const Login = () => {
         navigate(routes.words);
       }
     } catch (error: any) {
-      console.log(error.message);
+      setErrorMessage(error.message);
     }
   };
 
   return (
     <div className="container">
       <div className="p-4 box d-flex flex-column align-items-center">
-        <h2 className="mb-3">{t('KOSH_LOGIN')}</h2>
+        <h2 className="mb-3">{text('KOSH_LOGIN')}</h2>
         {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="formBasicEmail">
@@ -74,7 +74,7 @@ const Login = () => {
 
           <div className="d-grid gap-2">
             <Button variant="primary" type="submit">
-              {t('LOGIN')}
+              {text('LOGIN')}
             </Button>
           </div>
         </Form>
@@ -90,10 +90,10 @@ const Login = () => {
           className="p-4 box mt-3 text-center w-50"
         >
           <Trans components={{ newline: <br /> }}>CONTACT_ADMIN</Trans>
-          <a href={routes.signup}>{t('SIGNUP')}</a>
+          <a href={routes.signup}>{text('SIGNUP')}</a>
 
           <br />
-          <Link to="/forgot-password">{t('FORGOT_PASSWORD')}</Link>
+          <Link to="/forgot-password">{text('FORGOT_PASSWORD')}</Link>
         </Card>
       </div>
     </div>

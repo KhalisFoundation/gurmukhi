@@ -19,7 +19,7 @@ const Wordlists = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [wordlists, setWordlists] = useState<WordlistType[]>([]);
   const { user } = useUserAuth();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
   const navigate = useNavigate();
   if (!user) navigate(routes.login);
 
@@ -30,6 +30,10 @@ const Wordlists = () => {
       setWordlists(
         snapshot.docs.map((wlDoc) => ({
           id: wlDoc.id,
+          created_at : wlDoc.data().created_at,
+          updated_at : wlDoc.data().updated_at,
+          created_by : wlDoc.data().created_by,
+          updated_by : wlDoc.data().updated_by,
           ...wlDoc.data(),
         })),
       );
@@ -38,20 +42,20 @@ const Wordlists = () => {
 
   }, []);
 
-  const sortWordlists = (unwordlists: any[]) => {
+  const sortWordlists = (unwordlists: WordlistType[]) => {
     const sortedWordlists = unwordlists.sort(
-      (p1, p2) => compareUpdatedAt(p1, p2),
+      (p1, p2) => compareUpdatedAt(p1.created_at, p2.created_at),
     );
 
     return sortedWordlists;
   };
 
   const delWordlist = (wordlist: WordlistType) => {
-    const response = window.confirm(`Are you sure you want to delete this wordlist: ${wordlist.name}? \n This action is not reversible.`);
+    const response = window.confirm(text('DELETE_CONFIRM', { what: wordlist.name }));
     if (response) {
       const getWordlist = doc(firestore, `wordlists/${wordlist.id}`);
       deleteWordlist(getWordlist).then(() => {
-        alert('Word deleted!');
+        alert(text('DELETE_USER', { what: 'Word' }));
       });
     }
   };
@@ -71,8 +75,8 @@ const Wordlists = () => {
               if (val) {
                 return (
                   <li key={key}>
-                    {t('LABEL_VAL', {
-                      label: t(key.toUpperCase()),
+                    {text('LABEL_VAL', {
+                      label: text(key.toUpperCase()),
                       val,
                     })}
                   </li>
@@ -84,9 +88,9 @@ const Wordlists = () => {
         </div>
         <div className="d-flex flex-column align-items-end">
           <ButtonGroup>
-            <Button href={viewUrl} variant="success">{t('VIEW')}</Button>
-            <Button href={editUrl} variant="primary">{t('EDIT')}</Button>
-            {user?.role === roles.admin ? <Button onClick={() => delWordlist(wordlist)} variant="danger">{t('DELETE')}</Button> : null }
+            <Button href={viewUrl} variant="success">{text('VIEW')}</Button>
+            <Button href={editUrl} variant="primary">{text('EDIT')}</Button>
+            {user?.role === roles.admin ? <Button onClick={() => delWordlist(wordlist)} variant="danger">{text('DELETE')}</Button> : null }
           </ButtonGroup>
           <Badge pill bg="primary" text="white" hidden={!wordlist.status} className="mt-2">
             {wordlist.status}
@@ -98,16 +102,16 @@ const Wordlists = () => {
 
   if (wordlists.length === 0) {
     if (isLoading) {
-      return <h2>{t('LOADING')}</h2>;
+      return <h2>{text('LOADING')}</h2>;
     } else {
-      return <h2 className="no-wordlists">{t('NO_VALS', { vals: t('WORDLISTS') })}</h2>;
+      return <h2 className="no-wordlists">{text('NO_VALS', { vals: text('WORDLISTS') })}</h2>;
     }
   }
   return (
     <div className="container mt-2">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>{t('WORDLISTS')}</h2>
-        <Button href={routes.newWordlist}>{t('ADD_NEW', { what: t('WORDLIST') })}</Button>
+        <h2>{text('WORDLISTS')}</h2>
+        <Button href={routes.newWordlist}>{text('ADD_NEW', { what: text('WORDLIST') })}</Button>
       </div>
       {wordlists && wordlists.length && (
         <ListGroup>

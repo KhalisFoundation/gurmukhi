@@ -30,7 +30,7 @@ const EditUser = () => {
   const [error, setError] = useState('');
   const { user } = useUserAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
   const fillFormValues = (formData: any) => {
     const formVal = {
@@ -108,27 +108,26 @@ const EditUser = () => {
       setValidated(true);
       return;
     }
-    console.log(formValues);
     editUser(formValues);
   };
 
   if (isLoading) {
-    return <h2>{t('LOADING')}</h2>;
+    return <h2>{text('LOADING')}</h2>;
   }
   if (!found) {
-    return <h2>{t('USER_NOT_FOUND')}</h2>;
+    return <h2>{text('USER_NOT_FOUND')}</h2>;
   }
   if (user?.role !== roles.admin) {
-    return <h2>{t('NO_ACCESS')}</h2>;
+    return <h2>{text('NO_ACCESS')}</h2>;
   }
   return (
     <div className="container">
       <div className="p-4 box">
-        <h2 className="mb-3">{t('UPDATE_USER')}</h2>
+        <h2 className="mb-3">{text('UPDATE_USER')}</h2>
         {error && <Alert variant="danger">{error}</Alert>}
         <Form className="rounded p-4 p-sm-3" hidden={submitted} noValidate validated={validated} onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="name">
-            <Form.Label>{t('NAME')}</Form.Label>
+            <Form.Label>{text('NAME')}</Form.Label>
             <Form.Control
               type="name"
               placeholder="Name"
@@ -138,7 +137,7 @@ const EditUser = () => {
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="role" onChange={handleChange}>
-            <Form.Label>{t('ROLE')}</Form.Label>
+            <Form.Label>{text('ROLE')}</Form.Label>
             <Form.Select aria-label="Default select example" defaultValue={localUser.role}>
               {Object.entries(roles).map((role) => {
                 const [roleId, value] = role;
@@ -150,7 +149,7 @@ const EditUser = () => {
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="email">
-            <Form.Label>{t('EMAIL')}</Form.Label>
+            <Form.Label>{text('EMAIL')}</Form.Label>
             <Form.Control
               type="email"
               placeholder="Email address"
@@ -162,15 +161,15 @@ const EditUser = () => {
 
           <div className="d-grid gap-2">
             <Button variant="primary" type="submit">
-              {t('SUBMIT')}
+              {text('SUBMIT')}
             </Button>
           </div>
         </Form>
         {submitted ? (
           <Card className="background mt-4">
             <Card.Body className="rounded p-4 p-sm-3">
-              <h3>{t('USER_UPDATE_SUCCESS')}</h3>
-              <Button variant="primary" onClick={() => navigate(routes.users)}>{t('BACK_TO', { page: t('USERS') })}</Button>
+              <h3>{text('USER_UPDATE_SUCCESS')}</h3>
+              <Button variant="primary" onClick={() => navigate(routes.users)}>{text('BACK_TO', { page: text('USERS') })}</Button>
             </Card.Body>
           </Card>
         ) : null}

@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { firestore as db, firestore } from '../../firebase';
 import { MiniWord, NewWordType } from '../../types/word';
-import { MiniWordlist, WordlistType } from '../../types/wordlist';
+import { MiniWordlist, NewWordlistType, WordlistType } from '../../types/wordlist';
 import { Option, QuestionData, SentenceType } from '../../types';
 
 export default db;
@@ -28,8 +28,8 @@ export const wordsCollection = collection(db, 'words');
 // check if word already exists
 export const isWordNew = async (word: string, exception_id = ' ') => {
   if (word && word !== undefined) {
-    const q = query(wordsCollection, where('word', '==', word), where(documentId(), '!=', exception_id));
-    const result = await getDocs(q);
+    const queryStatement = query(wordsCollection, where('word', '==', word), where(documentId(), '!=', exception_id));
+    const result = await getDocs(queryStatement);
     return result.empty;
   }
   return true;
@@ -89,8 +89,8 @@ export const reviewWord = async (
 // get word from a list of word ids
 export const getWordsByIdList = async (id_list: string[]) => {
   if (id_list && id_list.length > 0) {
-    const q = query(wordsCollection, where(documentId(), 'in', id_list));
-    const result = await getDocs(q);
+    const queryStatement = query(wordsCollection, where(documentId(), 'in', id_list));
+    const result = await getDocs(queryStatement);
     return result.docs;
   }
   return [];
@@ -120,9 +120,9 @@ export const deleteSentence = async (sentence: DocumentReference) => {
 
 // delete sentence by word id
 export const deleteSentenceByWordId = async (word_id: string) => {
-  const q = query(sentencesCollection, where('word_id', '==', word_id));
+  const queryStatement = query(sentencesCollection, where('word_id', '==', word_id));
   const batch = writeBatch(firestore);
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await getDocs(queryStatement);
 
   querySnapshot.docs.forEach((sentenceData) => {
     if (sentenceData.data().word_id === word_id) {
@@ -158,9 +158,9 @@ export const deleteQuestion = async (question: DocumentReference) => {
 
 // delete question by word id
 export const deleteQuestionByWordId = async (word_id: string) => {
-  const q = query(questionsCollection, where('word_id', '==', word_id));
+  const queryStatement = query(questionsCollection, where('word_id', '==', word_id));
   const batch = writeBatch(firestore);
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await getDocs(queryStatement);
   querySnapshot.docs.forEach((questionData) => {
     if (questionData.data().word_id === word_id) {
       batch.delete(questionData.ref);
@@ -174,7 +174,7 @@ export const deleteQuestionByWordId = async (word_id: string) => {
 // Wordlists collection
 export const wordlistsCollection = collection(db, 'wordlists');
 
-export const addNewWordlist = async (wordlist_data: WordlistType) => {
+export const addNewWordlist = async (wordlist_data: NewWordlistType) => {
   const newWordlist = await addDoc(wordlistsCollection, {
     ...wordlist_data,
   });
@@ -201,8 +201,8 @@ export const deleteWordlist = async (wordlist: DocumentReference) => {
 // get word from a list of word ids
 export const getWordlistsByIdList = async (id_list: string[]) => {
   if (id_list.length > 0) {
-    const q = query(wordlistsCollection, where(documentId(), 'in', id_list));
-    const result = await getDocs(q);
+    const queryStatement = query(wordlistsCollection, where(documentId(), 'in', id_list));
+    const result = await getDocs(queryStatement);
     return result.docs;
   }
   return [];
@@ -210,14 +210,14 @@ export const getWordlistsByIdList = async (id_list: string[]) => {
 
 // get wordlists with a word id as a part of it
 export const getWordlistsByWordId = async (word_id: string) => {
-  const q = query(wordlistsCollection, where('words', 'array-contains', word_id));
-  const result = await getDocs(q);
+  const queryStatement = query(wordlistsCollection, where('words', 'array-contains', word_id));
+  const result = await getDocs(queryStatement);
   return result.docs;
 };
 
 export const getWordsFromSupportWordIds = async (word_id: string, type: string) => {
-  const q = query(wordsCollection, where(type, 'array-contains', word_id));
-  const result = await getDocs(q);
+  const queryStatement = query(wordsCollection, where(type, 'array-contains', word_id));
+  const result = await getDocs(queryStatement);
   return result.docs;
 };
 

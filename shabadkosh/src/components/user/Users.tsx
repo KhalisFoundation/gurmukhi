@@ -18,7 +18,7 @@ const Users = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [users, setUsers] = useState<NewUserType[]>([]);
   const { user } = useUserAuth();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
   useEffect(() => {
     setIsLoading(true);
@@ -44,19 +44,19 @@ const Users = () => {
   }, []);
 
   const sortedUsers = users.sort(
-    (p1, p2) => compareUpdatedAt(p1, p2),
+    (p1, p2) => compareUpdatedAt(p1.created_at, p2.created_at),
   );
 
   const delUser = (lUser: NewUserType) => {
     if (lUser.email === user.email && lUser.id === user.uid) {
-      alert('Self-destruct is not allowed!');
+      alert(text('SELF_DESTRUCT'));
       return;
     }
-    const response = window.confirm(`Are you sure you to delete this user: ${lUser.displayName}? \n This action is not reversible.`);
+    const response = window.confirm(text('DELETE_CONFIRM', { what: lUser.displayName }));
     if (response) {
       const getWord = doc(firestore, `users/${lUser.id}`);
       deleteWord(getWord).then(() => {
-        alert('User deleted!');
+        alert(text('DELETE_USER', { what: 'User' }));
       });
     }
   };
@@ -71,10 +71,10 @@ const Users = () => {
         <div className="ms-2 me-auto">
           <h5 className="fw-bold">{cuser.displayName}</h5>
           <p>
-            {t('EMAILED', { email: cuser.email })}
+            {text('EMAILED', { email: cuser.email })}
           </p>
           <p>
-            {t('WITH_ROLE', { role: cuser.role })}
+            {text('WITH_ROLE', { role: cuser.role })}
           </p>
         </div>
         <div className="d-flex flex-column align-items-end">
@@ -84,14 +84,14 @@ const Users = () => {
               className="bg-transparent border-0"
               hidden={user?.role !== roles.admin}
             >
-              {t('PEN')}
+              {text('PEN')}
             </Button>
             <Button
               onClick={() => delUser(cuser)}
               className="bg-transparent border-0"
               hidden={user?.role !== roles.admin}
             >
-              {t('BIN')}
+              {text('BIN')}
             </Button>
           </ButtonGroup>
         </div>
@@ -100,14 +100,14 @@ const Users = () => {
   });
 
   if (users.length === 0 || isLoading) {
-    return <h2>{t('LOADING')}</h2>;
+    return <h2>{text('LOADING')}</h2>;
   }
   if (user?.role !== roles.admin) {
-    return <h2>{t('NO_ACCESS')}</h2>;
+    return <h2>{text('NO_ACCESS')}</h2>;
   }
   return (
     <div className="container">
-      <h2>{t('USERS')}</h2>
+      <h2>{text('USERS')}</h2>
       {users && users.length ? (
         <div className="d-flex ms-2 justify-content-evenly">
           <Container className="p-4">
@@ -115,7 +115,7 @@ const Users = () => {
           </Container>
         </div>
       ) : (
-        <h2 className="no-words">{t('NO_USERS_FOUND')}</h2>
+        <h2 className="no-words">{text('NO_USERS_FOUND')}</h2>
       )}
     </div>
   );

@@ -7,7 +7,7 @@ export type Metadata = {
   subgroup?: string
 };
 
-export interface WordlistType {
+export interface NewWordlistType {
   id?: string,
   name?: string,
   metadata?: Metadata,
@@ -17,6 +17,19 @@ export interface WordlistType {
   created_at?: TimestampType,
   updated_by?: string,
   updated_at?: TimestampType,
+  words?: string[] | MiniWord[]
+}
+
+export interface WordlistType {
+  id: string,
+  name?: string,
+  metadata?: Metadata,
+  status?: string,
+  notes?: string,
+  created_by: string,
+  created_at: TimestampType,
+  updated_by: string,
+  updated_at: TimestampType,
   words?: string[] | MiniWord[]
 }
 

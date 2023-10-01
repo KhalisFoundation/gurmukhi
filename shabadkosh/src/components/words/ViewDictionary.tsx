@@ -41,7 +41,7 @@ const ViewDictionary = () => {
   const [words, setWords] = useState<WordType[]>([]);
   const [filteredWords, setFilteredWords] = useState<WordType[]>([]);
   const { user } = useUserAuth();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
   const navigate = useNavigate();
 
   let statusList = [] as string[];
@@ -55,7 +55,7 @@ const ViewDictionary = () => {
 
   const sortWords = (unwords: WordType[]) => {
     const sortedWords = unwords.sort(
-      (p1, p2) => compareUpdatedAt(p1, p2),
+      (p1, p2) => compareUpdatedAt(p1.created_at, p2.created_at),
     );
     return sortedWords;
   };
@@ -128,22 +128,22 @@ const ViewDictionary = () => {
                   href={detailUrl}
                   className="bg-transparent border-0"
                 >
-                  {t('EYE')}
+                  {text('EYE')}
                 </Button>
                 {Object.keys(statusList).includes(word.status ?? STATUS.CREATING_ENGLISH) ? (
                   <Button
                     href={editUrl}
                     className="bg-transparent border-0"
                   >
-                    {t('PEN')}
+                    {text('PEN')}
                   </Button>
                 ) : null }
                 {user?.role === roles.admin ? (
                   <Button
-                    onClick={() => removeWord(word, setIsLoading, navigate)}
+                    onClick={() => removeWord(word, setIsLoading, navigate, text)}
                     className="bg-transparent border-0"
                   >
-                    {t('BIN')}
+                    {text('BIN')}
                   </Button>
                 ) : null}
               </ButtonGroup>
@@ -180,14 +180,14 @@ const ViewDictionary = () => {
                   {word.status}
                 </Badge>
                 <Badge pill bg="primary" text="white" hidden={!word.is_for_support}>
-                  {t('SYN_OR_ANT')}
+                  {text('SYN_OR_ANT')}
                 </Badge>
               </div>
             </div>
             <ButtonGroup>
-              <Button href={detailUrl} variant="success">{t('VIEW')}</Button>
-              {statusList.includes(word.status ?? STATUS.CREATING_ENGLISH) ? <Button href={editUrl}>{t('EDIT')}</Button> : null }
-              {user?.role === roles.admin ? <Button onClick={() => removeWord(word, setIsLoading, navigate)} variant="danger">{t('DELETE')}</Button> : null }
+              <Button href={detailUrl} variant="success">{text('VIEW')}</Button>
+              {statusList.includes(word.status ?? STATUS.CREATING_ENGLISH) ? <Button href={editUrl}>{text('EDIT')}</Button> : null }
+              {user?.role === roles.admin ? <Button onClick={() => removeWord(word, setIsLoading, navigate, text)} variant="danger">{text('DELETE')}</Button> : null }
             </ButtonGroup>
           </Card.Body>
         </Card>
@@ -206,16 +206,16 @@ const ViewDictionary = () => {
 
   if (words.length === 0) {
     if (isLoading) {
-      return <h2>{t('LOADING')}</h2>;
+      return <h2>{text('LOADING')}</h2>;
     } else {
-      return <h2 className="no-words">{t('NO_VALS', { vals: t('WORDS') })}</h2>;
+      return <h2 className="no-words">{text('NO_VALS', { vals: text('WORDS') })}</h2>;
     }
   }
   return (
     <div className="container mt-2">
       <div className="d-flex justify-content-between align-items-center">
-        <h2>{t('WORDS')}</h2>
-        <Button href={routes.newWord}>{t('ADD_NEW', { what: '' })}</Button>
+        <h2>{text('WORDS')}</h2>
+        <Button href={routes.newWord}>{text('ADD_NEW', { what: '' })}</Button>
       </div>
       <Button
         className="button"
@@ -231,7 +231,7 @@ const ViewDictionary = () => {
           controlId="formBasicSearch"
           className="w-100"
         >
-          <Form.Label>{t('SEARCH')}</Form.Label>
+          <Form.Label>{text('SEARCH')}</Form.Label>
           <Form.Control
             type="text"
             placeholder="Enter search term"
@@ -242,20 +242,20 @@ const ViewDictionary = () => {
 
         <div className="d-flex align-items-center">
           <Form.Group controlId="filter" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilter(e.target.value ?? '')} defaultValue={filter}>
-            <Form.Label>{t('FILTER')}</Form.Label>
+            <Form.Label>{text('FILTER')}</Form.Label>
             <Form.Select>
-              <option key="all" value="all">{t('SHOW_ALL')}</option>
-              <option key="cbyme" value="created_by_me">{t('CREATED_BY_ME')}</option>
-              <option key="amwon" value="am_working_on">{t('AM_WORKING_ON')}</option>
-              <option key="lupme" value="updated_by_me">{t('LAST_UPDATED_BY_ME')}</option>
-              <option key="synant" value="syn_or_ant">{t('SYN_OR_ANT')}</option>
+              <option key="all" value="all">{text('SHOW_ALL')}</option>
+              <option key="cbyme" value="created_by_me">{text('CREATED_BY_ME')}</option>
+              <option key="amwon" value="am_working_on">{text('AM_WORKING_ON')}</option>
+              <option key="lupme" value="updated_by_me">{text('LAST_UPDATED_BY_ME')}</option>
+              <option key="synant" value="syn_or_ant">{text('SYN_OR_ANT')}</option>
             </Form.Select>
           </Form.Group>
 
           <Form.Group controlId="status" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value ?? '')}>
-            <Form.Label>{t('STATUS')}</Form.Label>
+            <Form.Label>{text('STATUS')}</Form.Label>
             <Form.Select defaultValue={status}>
-              <option key="all" value="all">{t('SHOW_ALL')}</option>
+              <option key="all" value="all">{text('SHOW_ALL')}</option>
               {statusList.length > 0 && statusList.map((statusValue) => {
                 const capitalizedStatus = splitAndCapitalize(statusValue);
                 return (

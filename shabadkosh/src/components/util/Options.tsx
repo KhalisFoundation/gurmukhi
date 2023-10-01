@@ -21,7 +21,7 @@ const Options = ({
   const [showNewForm, setShowNewForm] = useState(false);
   const [option, setOption] = useState<string>('');
   const [translation, setTranslation] = useState<string>('');
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
   const onViewToggle = (event: FormEvent) => {
     event.preventDefault();
@@ -51,7 +51,7 @@ const Options = ({
         if (!duplicate && !alreadyInWords) {
           setWord(id, [...word, newOption] as Option[], type ?? '');
         } else {
-          alert(`${newOption.option} already exists, choose it from the dropdown`);
+          alert(text('ALREADY_EXISTS', { what: newOption.option }));
         }
 
         setOption('');
@@ -94,7 +94,7 @@ const Options = ({
         className="btn btn-sm"
         onClick={(event) => onViewToggle(event)}
       >
-        {t('HAND_PEN')}
+        {text('HAND_PEN')}
       </button>
       <Multiselect
         id={id}
@@ -110,14 +110,14 @@ const Options = ({
         className={showNewForm ? 'd-flex justify-content-around ' : 'd-none'}
       >
         <div>
-          {t('OPTION')}
+          {text('OPTION')}
           <Form.Control id={`option${id}`} type="text" placeholder={placeholder} pattern={regex.gurmukhiSentenceRegex} value={option} onChange={(event) => setOption(event.target.value)} />
-          <Form.Control.Feedback type="invalid" itemID={`option${id}`}>{t('FEEDBACK_GURMUKHI', { for: t('OPTION') })}</Form.Control.Feedback>
+          <Form.Control.Feedback type="invalid" itemID={`option${id}`}>{text('FEEDBACK_GURMUKHI', { for: text('OPTION') })}</Form.Control.Feedback>
         </div>
         <div>
-          {t('TRANSLATION')}
+          {text('TRANSLATION')}
           <Form.Control id={`otranslation${id}`} type="text" placeholder="Enter translation" pattern={regex.englishQuestionTranslationRegex} value={translation} onChange={(event) => setTranslation(event.target.value)} />
-          <Form.Control.Feedback type="invalid" itemID={`otranslation${id}`}>{t('FEEDBACK_ENGLISH', { for: t('TRANSLATION') })}</Form.Control.Feedback>
+          <Form.Control.Feedback type="invalid" itemID={`otranslation${id}`}>{text('FEEDBACK_ENGLISH', { for: text('TRANSLATION') })}</Form.Control.Feedback>
         </div>
         <div>
           <button
@@ -125,14 +125,14 @@ const Options = ({
             className="btn btn-sm fs-5 me-2 p-0"
             onClick={(event) => addNew(event, `${option}:${translation}`)}
           >
-            {t('CHECK')}
+            {text('CHECK')}
           </button>
           <button
             type="button"
             className="btn btn-sm fs-5 ms-2 p-0"
             onClick={remWord}
           >
-            {t('CROSS')}
+            {text('CROSS')}
           </button>
         </div>
       </div>
