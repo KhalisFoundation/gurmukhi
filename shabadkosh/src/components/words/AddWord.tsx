@@ -30,6 +30,7 @@ import {
   setOptionsDataForSubmit,
   splitAndClear,
   splitAndCapitalize,
+  removeExtraSpaces,
 } from '../util';
 import SupportWord from '../util/SupportWord';
 import Options from '../util/Options';
@@ -339,11 +340,11 @@ const AddWord = () => {
     if (wordIsNew) {
       setIsLoading(true);
       addWord({
-        word: form.word,
-        translation: form.translation,
-        meaning_punjabi: form.meaning_punjabi ?? '',
-        meaning_english: form.meaning_english ?? '',
-        part_of_speech: form.part_of_speech ?? '',
+        word: removeExtraSpaces(form.word),
+        translation: removeExtraSpaces(form.translation),
+        meaning_punjabi: removeExtraSpaces(form.meaning_punjabi),
+        meaning_english: removeExtraSpaces(form.meaning_english),
+        part_of_speech: form.part_of_speech,
         synonyms: form.synonyms,
         antonyms: form.antonyms,
         images: splitAndClear(form.images) ?? [],
@@ -352,6 +353,7 @@ const AddWord = () => {
         updated_at: Timestamp.now(),
         created_by: user.email,
         updated_by: user.email,
+        notes: removeExtraSpaces(form.notes),
         is_for_support: form.is_for_support ?? false,
       })
         .then((word_id) => {
