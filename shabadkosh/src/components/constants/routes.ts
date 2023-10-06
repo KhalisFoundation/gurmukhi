@@ -19,4 +19,5 @@ export default {
   wordlist: '/wordlists/:wlid',
   newWordlist: '/wordlists/new',
   editWordlist: '/wordlists/edit/:wlid',
+  noAccess: '/no-access',
 };
