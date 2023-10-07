@@ -30,7 +30,6 @@ import {
   setOptionsDataForSubmit,
   splitAndCapitalize,
   hasValidOptions,
-  removeExtraSpaces,
 } from '../util';
 import SupportWord from '../util/SupportWord';
 import Options from '../util/Options';
@@ -46,6 +45,7 @@ import {
   changeSentence,
   createWordData,
   removeData,
+  saveWord,
 } from '../util/words';
 
 const AddWord = () => {
@@ -155,58 +155,7 @@ const AddWord = () => {
   };
 
   const addNewWord = async (formData: any) => {
-    const {
-      lSentences, lQuestions, lWordlists, ...form
-    } = formData;
-
-    const wordIsNew = await isWordNew(form.word);
-    if (wordIsNew) {
-      setIsLoading(true);
-      addWord({
-        word: removeExtraSpaces(form.word),
-        translation: removeExtraSpaces(form.translation),
-        meaning_punjabi: removeExtraSpaces(form.meaning_punjabi),
-        meaning_english: removeExtraSpaces(form.meaning_english),
-        part_of_speech: form.part_of_speech,
-        synonyms: form.synonyms,
-        antonyms: form.antonyms,
-        images: splitAndClear(form.images) ?? [],
-        status: form.status ?? STATUS.CREATING_ENGLISH,
-        created_at: Timestamp.now(),
-        updated_at: Timestamp.now(),
-        created_by: user.email,
-        updated_by: user.email,
-        notes: removeExtraSpaces(form.notes),
-        is_for_support: form.is_for_support ?? false,
-      })
-        .then((word_id) => {
-        // use return value of addWord to add sentences
-          lSentences.forEach((sentence: any) => {
-            addSentence({
-              ...sentence,
-              word_id,
-            });
-          });
-
-          lQuestions.forEach((question: any) => {
-            addQuestion({
-              ...question,
-              translation: question.translation ?? '',
-              options: question.options ?? [],
-              type: question.type ?? qtypes.CONTEXT,
-              word_id,
-            });
-          });
-
-          addWordIdToWordlists(lWordlists, word_id);
-        }).finally(() => {
-          setIsLoading(false);
-        });
-
-      resetState();
-      setSubmitted(true);
-    } else {
-      alert('Word already exists!');
+    saveWord(formData, SUBMIT_TYPE.CREATE, user).finally(() => {
       setIsLoading(false);
     });
 

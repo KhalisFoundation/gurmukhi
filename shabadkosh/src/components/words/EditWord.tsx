@@ -30,7 +30,6 @@ import {
   setOptionsDataForSubmit,
   splitAndCapitalize,
   hasValidOptions,
-  removeExtraSpaces,
 } from '../util';
 import SupportWord from '../util/SupportWord';
 import Options from '../util/Options';
@@ -46,6 +45,7 @@ import {
   changeSentence,
   createWordData,
   removeData,
+  saveWord,
 } from '../util/words';
 
 const EditWord = () => {
@@ -283,70 +283,7 @@ const EditWord = () => {
   };
 
   const editWord = async (formData: any) => {
-    setIsLoading(true);
-    const { fSentences, fQuestions, ...form } = formData;
-
-    const wordIsNew = await isWordNew(form.word, wordid);
-    if (wordIsNew) {
-      updateWord(
-        getWord,
-        {
-          word: removeExtraSpaces(form.word),
-          translation: removeExtraSpaces(form.translation),
-          meaning_punjabi: removeExtraSpaces(form.meaning_punjabi),
-          meaning_english: removeExtraSpaces(form.meaning_english),
-          part_of_speech: removeExtraSpaces(form.part_of_speech),
-          synonyms: form.synonyms,
-          antonyms: form.antonyms,
-          images: splitAndClear(form.images) ?? [],
-          status: form.status ?? STATUS.CREATING_ENGLISH,
-          created_at: word.created_at ?? Timestamp.now(),
-          updated_at: Timestamp.now(),
-          created_by: form.created_by ?? user.email,
-          updated_by: user.email ?? '',
-          notes: removeExtraSpaces(form.notes),
-          is_for_support: form.is_for_support ?? false,
-        },
-      )
-        .then(() => {
-        // use return value of addWord to add sentences
-          fSentences.forEach((sentence: any) => {
-            const lSentence = {
-              ...sentence, word_id: wordid,
-            };
-            if (sentence.id === undefined) {
-              addSentence(lSentence);
-            } else {
-              const getSentence = doc(firestore, `sentences/${sentence.id}`);
-              updateSentence(getSentence, {
-                ...lSentence,
-              });
-            }
-          });
-
-          fQuestions.forEach((question: any) => {
-            const lQuestion = {
-              ...question,
-              translation: question.translation ?? '',
-              options: question.options ?? [],
-              type: question.type ?? 'context',
-              word_id: wordid,
-            };
-            if (question.id === undefined) {
-              addQuestion(lQuestion);
-            } else {
-              const getQuestion = doc(firestore, `questions/${question.id}`);
-              updateQuestion(getQuestion, lQuestion);
-            }
-          });
-        }).finally(() => {
-          setIsLoading(false);
-        });
-
-      resetState();
-      setSubmitted(true);
-    } else {
-      alert('Word already exists!');
+    saveWord(formData, SUBMIT_TYPE.EDIT, user, word, getWord, wordId).finally(() => {
       setIsLoading(false);
     });
 

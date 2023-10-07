@@ -125,13 +125,16 @@ export const deleteSentenceByWordId = async (word_id: string) => {
   const querySnapshot = await getDocs(queryStatement);
 
   querySnapshot.docs.forEach((sentenceData) => {
-    if (sentenceData.data().word_id === word_id) {
-      batch.delete(sentenceData.ref);
-    }
+    batch.delete(sentenceData.ref);
   });
 
-  const res = await batch.commit();
-  return res;
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 // Questions collection
@@ -162,13 +165,16 @@ export const deleteQuestionByWordId = async (word_id: string) => {
   const batch = writeBatch(firestore);
   const querySnapshot = await getDocs(queryStatement);
   querySnapshot.docs.forEach((questionData) => {
-    if (questionData.data().word_id === word_id) {
-      batch.delete(questionData.ref);
-    }
+    batch.delete(questionData.ref);
   });
 
-  const res = await batch.commit();
-  return res;
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 // Wordlists collection
@@ -246,8 +252,14 @@ export const setWordInWordlists = async (
       return null;
     });
   }
-  const res = await batch.commit();
-  return res;
+
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 export const removeWordFromWordlists = async (word_id: string) => {
@@ -259,8 +271,14 @@ export const removeWordFromWordlists = async (word_id: string) => {
       words: arrayRemove(word_id),
     });
   });
-  const res = await batch.commit();
-  return res;
+
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 export const removeWordFromSupport = async (word_id: string) => {
@@ -275,8 +293,14 @@ export const removeWordFromSupport = async (word_id: string) => {
       antonyms: arrayRemove(word_id),
     });
   });
-  const res = await batch.commit();
-  return res;
+
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 export const addWordIdToWordlists = async (wordlist_ids: string[], word_id: string) => {
@@ -290,8 +314,14 @@ export const addWordIdToWordlists = async (wordlist_ids: string[], word_id: stri
       return null;
     });
   }
-  const res = await batch.commit();
-  return res;
+
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 export const createMultipleWordsAtOnce = async (wordsList: MiniWord[] | Option[], collectionName: string) => {
@@ -306,6 +336,11 @@ export const createMultipleWordsAtOnce = async (wordsList: MiniWord[] | Option[]
       });
     });
   }
-  const res = await batch.commit().then(() => wordIdList);
-  return res;
+  try {
+    const res = await batch.commit().then(() => wordIdList);
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };

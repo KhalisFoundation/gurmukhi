@@ -13,6 +13,7 @@ import SUBMIT_TYPE from '../constants/submit';
 import PARTS_OF_SPEECH from '../constants/pos';
 import routes from '../constants/routes';
 import { NavigateFunction } from 'react-router-dom';
+import { removeExtraSpaces } from '.';
 
 export const addNewData = (
   event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -168,11 +169,11 @@ export const saveWord = async (
 
   let operation;
   const wordData = {
-    word: form.word,
-    translation: form.translation,
-    meaning_punjabi: form.meaning_punjabi ?? '',
-    meaning_english: form.meaning_english,
-    part_of_speech: form.part_of_speech ?? '',
+    word: removeExtraSpaces(form.word),
+    translation: removeExtraSpaces(form.translation),
+    meaning_punjabi: removeExtraSpaces(form.meaning_punjabi),
+    meaning_english: removeExtraSpaces(form.meaning_english),
+    part_of_speech: form.part_of_speech,
     synonyms: form.synonyms,
     antonyms: form.antonyms,
     images: splitAndClear(form.images) ?? [],
@@ -181,7 +182,7 @@ export const saveWord = async (
     updated_at: Timestamp.now(),
     created_by: form.created_by ?? user.email,
     updated_by: user.email,
-    notes: form.notes ?? '',
+    notes: removeExtraSpaces(form.notes),
     is_for_support: form.is_for_support ?? false,
   } as NewWordType;
 
