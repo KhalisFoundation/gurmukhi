@@ -23,7 +23,7 @@ const Signup = () => {
     e.preventDefault();
     setError('');
     try {
-      const role = roles.creator;
+      const role = roles.unassigned;
       await checkIfEmailUnique(email).then(async (unique) => {
         if (unique) {
           await signUp(diplayName, role, email, password).then((val: any) => {
@@ -62,7 +62,7 @@ const Signup = () => {
           <Form.Control
             type="role"
             placeholder="Role"
-            defaultValue="Creator"
+            defaultValue={roles.unassigned}
             disabled
           />
         </Form.Group>

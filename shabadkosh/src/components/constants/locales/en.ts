@@ -67,6 +67,8 @@ export default {
   NAME: 'Name',
   NAMED: 'Name: {{name}}',
   NO_ACCESS: 'Sorry, you are not authorized to view this page.',
+  NO_ACCESS_TITLE: 'No Access',
+  NO_ACCESS_CONTENT: 'You don\'t have any assigned role to be able to access the internal tool.<br/>Please contact the admin to get website access.',
   NOTES: 'Notes',
   NO_TEXT: 'No {{for}}',
   NOT_FOUND: '{{what}} not found!',
