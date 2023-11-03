@@ -52,9 +52,9 @@ export const UserAuthContextProvider = ({ children }: { children:ReactElement })
               email,
               displayName: displayName ?? email?.split('@')[0],
               created_at: Timestamp.now(),
-              created_by: t('SELF'),
+              created_by: text('SELF'),
               updated_at: Timestamp.now(),
-              updated_by: t('SELF'),
+              updated_by: text('SELF'),
             }).then(() => true);
           } else {
             return true;
