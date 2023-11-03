@@ -23,15 +23,17 @@ const Signup = () => {
     event.preventDefault();
     setErrorMessage('');
     try {
-      const role = roles.creator;
-      const unique = await checkIfEmailUnique(email);
-      if (unique) {
-        const success = await signUp(diplayName, role, email, password);
-        if (success) {
-          navigate(routes.words);
+      const role = roles.unassigned;
+      await checkIfEmailUnique(email).then(async (unique) => {
+        if (unique) {
+          await signUp(diplayName, role, email, password).then((val: any) => {
+            if (val) {
+              navigate(routes.words);
+            }
+          });
+        } else {
+          setErrorMessage('Username already exists!');
         }
-      } else {
-        setErrorMessage('Username already exists!');
       }
     } catch (error: any) {
       setErrorMessage(error.message);
@@ -60,7 +62,7 @@ const Signup = () => {
           <Form.Control
             type="role"
             placeholder="Role"
-            defaultValue="Creator"
+            defaultValue={roles.unassigned}
             disabled
           />
         </Form.Group>

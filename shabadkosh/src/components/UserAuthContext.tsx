@@ -40,32 +40,33 @@ export const UserAuthContextProvider = ({ children }: { children:ReactElement })
   ) => signInWithEmailAndPassword(auth, email, password);
 
   const signInWithGoogle = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
-      const { uid, email, displayName } = userCredential.user;
-      const found = await checkUser(uid, email ?? '');
-      if (!found) {
-        const localUser = doc(firestore, `users/${uid}`);
-        await setDoc(localUser, {
-          role: roles.creator,
-          email,
-          displayName: displayName ?? email?.split('@')[0],
-          created_at: Timestamp.now(),
-          created_by: text('SELF'),
-          updated_at: Timestamp.now(),
-          updated_by: text('SELF'),
+    const provider = new GoogleAuthProvider();
+    return signInWithPopup(auth, provider)
+      .then((userCredential) => {
+        const { uid, email, displayName } = userCredential.user;
+        return checkUser(uid, email ?? '').then((found) => {
+          if (!found) {
+            const localUser = doc(firestore, `users/${uid}`);
+            setDoc(localUser, {
+              role: roles.unassigned,
+              email,
+              displayName: displayName ?? email?.split('@')[0],
+              created_at: Timestamp.now(),
+              created_by: t('SELF'),
+              updated_at: Timestamp.now(),
+              updated_by: t('SELF'),
+            }).then(() => true);
+          } else {
+            return true;
+          }
+          setUser(userCredential.user);
         });
-      } else {
-        return true;
-      }
-      setUser(userCredential.user);
-    } catch (error: any) {
-      if (Object.keys(errors).includes(error.code)) {
-        alert(errors[error.code]);
-      }
-      return false;
-    }
+      }).catch((error: any) => {
+        if (Object.keys(errors).includes(error.code)) {
+          alert(errors[error.code]);
+        }
+        return false;
+      });
   };
 
   const signUp = async (

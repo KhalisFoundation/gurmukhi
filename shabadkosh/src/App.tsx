@@ -29,6 +29,7 @@ import ViewWordlist from './components/wordlists/ViewWordlist';
 import EditUser from './components/user/EditUser';
 import en from './components/constants/locales/en';
 import routes from './components/constants/routes';
+import NoAccess from './components/NoAccess';
 
 i18n.use(initReactI18next).init({
   resources: {
@@ -183,6 +184,9 @@ export const App = () => {
                   </ProtectedRoute>
                 )}
               />
+
+              {/* No Access */}
+              <Route path='/no-access' element={<NoAccess />} />
 
               {/* The 404 page */}
               <Route path="*" element={<Navigate to={routes.words} />} />
