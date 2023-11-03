@@ -34,7 +34,7 @@ const Signup = () => {
         } else {
           setErrorMessage('Username already exists!');
         }
-      }
+      });
     } catch (error: any) {
       setErrorMessage(error.message);
     }
