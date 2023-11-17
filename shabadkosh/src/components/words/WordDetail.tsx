@@ -35,10 +35,11 @@ import {
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, cstatus, STATUS, EmptyWord,
+  astatus, rstatus, cstatus, STATUS, EmptyWord, reviewStatus,
 } from '../constants';
 import { capitalize, convertTimestampToDateString } from '../util/utils';
 import roles from '../constants/roles';
+import errors from '../constants/error';
 import routes from '../constants/routes';
 import { removeWord } from '../util/words';
 
@@ -208,30 +209,39 @@ const WordDetail = () => {
     }
     const response = window.confirm(text('CONFIRM', { action: action, what: word_in_review.word }));
     if (response) {
-      const getRevWord = doc(firestore, `words/${word_in_review.id}`);
-      let status = STATUS.REVIEW_ENGLISH;
-      if (word_in_review.status) {
-        if (type === 'review') {
-          if (Object.keys(cstatus).includes(word_in_review.status)) {
-            if (word_in_review.status.includes('english')) {
-              status = STATUS.REVIEW_ENGLISH;
-            } else if (word_in_review.status.includes('punjabi')) {
-              status = STATUS.REVIEW_FINAL;
+      try {
+
+        const getRevWord = doc(firestore, `words/${word_in_review.id}`);
+        let status = STATUS.REVIEW_ENGLISH;
+        if (word_in_review.status) {
+          if (type === 'review') {
+            if (Object.keys(cstatus).includes(word_in_review.status)) {
+              if (word_in_review.status.includes('english')) {
+                status = STATUS.REVIEW_ENGLISH;
+              } else if (word_in_review.status.includes('punjabi')) {
+                status = STATUS.REVIEW_FINAL;
+              }
+            }
+          } else if (type === 'approve') {
+            if (word_in_review.status === STATUS.REVIEW_ENGLISH) {
+              status = STATUS.CREATING_PUNJABI;
+            } else if (word_in_review.status === STATUS.REVIEW_FINAL) {
+              status = STATUS.ACTIVE;
             }
           }
-        } else if (type === 'approve') {
-          if (word_in_review.status === STATUS.REVIEW_ENGLISH) {
-            status = STATUS.CREATING_PUNJABI;
-          } else if (word_in_review.status === STATUS.REVIEW_FINAL) {
-            status = STATUS.ACTIVE;
-          }
+        } else {
+          status = STATUS.REVIEW_ENGLISH;
         }
-      } else {
-        status = STATUS.REVIEW_ENGLISH;
+        reviewWord(getRevWord, word_in_review, status, user.email).then(() => {
+          navigate(routes.words);
+        });
+      } catch (err: any) {
+        if (Object.keys(errors).includes(err.code)) {
+          alert(errors[err.code]);
+        } else {
+          alert(err);
+        }
       }
-      reviewWord(getRevWord, word_in_review, status, user.email).then(() => {
-        navigate(routes.words);
-      });
     }
   };
 
@@ -289,7 +299,7 @@ const WordDetail = () => {
 
           <ButtonGroup className="d-flex align-self-end">
             {((word.status && statusList.includes(word.status ?? STATUS.CREATING_ENGLISH)) || word.is_for_support) ? <Button href={editUrl}>{text('EDIT')}</Button> : null}
-            {(word.status && Object.values(cstatus).includes(word.status)) ? <Button onClick={() => revWord(word, 'review')} variant="success">{text('SEND_TO_REVIEW')}</Button> : null}
+            {(word.status && !reviewStatus.includes(word.status)) ? <Button onClick={() => revWord(word, 'review')} variant="success">{text('SEND_TO_REVIEW')}</Button> : null}
             {(word.status && [roles.reviewer, roles.admin].includes(user.role) && [STATUS.REVIEW_ENGLISH, STATUS.REVIEW_FINAL].includes(word.status)) ? <Button onClick={() => revWord(word, 'approve')} variant="success">{text('APPROVE')}</Button> : null}
             {user.role === roles.admin ? <Button onClick={() => removeWord(word, setIsLoading, navigate, text)} variant="danger">{text('DELETE')}</Button> : null}
           </ButtonGroup>

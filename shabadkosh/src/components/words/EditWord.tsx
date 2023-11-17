@@ -16,7 +16,7 @@ import {
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, qtypes, STATUS, cstatus, cstatus2, DATATYPES,
+  astatus, rstatus, qtypes, STATUS, cstatus, cstatus2, DATATYPES, reviewStatus,
 } from '../constants';
 import {
   getWordlistsByWordId,
@@ -572,19 +572,22 @@ const EditWord = () => {
           <Button variant="primary" type="submit">
             {text('SUBMIT')}
           </Button>
+
+          {word.status && !reviewStatus.includes(word.status) ? (
+            <Button variant="primary" type="button" onClick={(e) => sendForReview(e)}>
+              {t('SEND_FOR_REVIEW')}
+            </Button>
+          ) : null}
+
           {word.status && [
             roles.reviewer,
             roles.admin,
-          ].includes(user.role) && [
-            STATUS.REVIEW_ENGLISH,
-            STATUS.REVIEW_FINAL,
-          ].includes(word.status)
-            ? (
-              <Button variant="primary" type="button" onClick={handleApprove}>
-                {text('APPROVE')}
-              </Button>
-            )
-            : null }
+          ].includes(user.role)
+          && reviewStatus.includes(word.status) ? (
+            <Button variant="primary" type="button" onClick={(e) => sendForReview(e, 'approve')}>
+              {t('APPROVE')}
+            </Button>
+          ) : null }
         </div>
       </Form>
       {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
