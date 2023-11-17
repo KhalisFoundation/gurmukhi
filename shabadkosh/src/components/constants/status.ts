@@ -12,8 +12,10 @@ export const STATUS = {
 // status which creator role can set
 export const cstatus = [
   STATUS.CREATING_ENGLISH,
+  STATUS.REVIEW_ENGLISH,
   STATUS.FEEDBACK_ENGLISH,
   STATUS.CREATING_PUNJABI,
+  STATUS.REVIEW_FINAL,
   STATUS.FEEDBACK_PUNJABI,
 ];
 
@@ -47,3 +49,8 @@ export const qtypes = {
   MEANING: 'meaning',
   DEFINITION: 'definition',
 };
+
+export const reviewStatus = [
+  STATUS.REVIEW_ENGLISH,
+  STATUS.REVIEW_FINAL,
+];

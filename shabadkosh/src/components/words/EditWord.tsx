@@ -15,7 +15,7 @@ import {
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, cstatus, qtypes, STATUS,
+  astatus, rstatus, cstatus, qtypes, STATUS, reviewStatus,
 } from '../constants';
 import {
   addQuestion,
@@ -879,7 +879,7 @@ const EditWord = () => {
           <Button variant="primary" type="submit">
             Submit
           </Button>
-          {word.status && cstatus.includes(word.status)
+          {word.status && !reviewStatus.includes(word.status)
             ? (
               <Button variant="primary" type="button" onClick={(e) => sendForReview(e)}>
                 {t('SEND_FOR_REVIEW')}
@@ -889,11 +889,8 @@ const EditWord = () => {
           {word.status && [
             roles.reviewer,
             roles.admin,
-          ].includes(user.role) && [
-            STATUS.REVIEW_ENGLISH,
-            STATUS.REVIEW_FINAL,
-          ].includes(word.status)
-            ? (
+          ].includes(user.role)
+          && reviewStatus.includes(word.status) ? (
               <Button variant="primary" type="button" onClick={(e) => sendForReview(e, 'approve')}>
                 {t('APPROVE')}
               </Button>
