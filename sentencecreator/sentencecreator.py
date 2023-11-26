@@ -24,11 +24,10 @@ def create_prompt(wordlist):
     prompt = f"Here is a list of words:{wordlist}"
     sentence_count = config.SENTENCES_PER_WORD
     prompt += f"For each of these words, create {sentence_count} sentences using the word for a grade 3 student."
-    prompt += f"Draft the response as a comma delimited list that can be saved as a csv file. Column 0 is the word, Column 1 through {sentence_count} "
-    prompt += f"are the {sentence_count} sentences generated for that word."
-    prompt += f"Add a new line to separate the words"
+    prompt += f"Draft the response as a comma delimited list that can be saved as a csv file."
+    prompt += f"Column 0 is the word.  In each of Column 1 through {sentence_count}, place one of the generated example senetnces for that given word."
+    prompt += f" All the example sentences for a given word should be in the same row"
     return prompt
-
 
 def read_wordlist(filename):
     # Read the word list from the CSV file
