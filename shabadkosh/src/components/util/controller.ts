@@ -75,7 +75,7 @@ export const reviewWord = async (
   updated_by: string,
 ) => {
   const revWord = await updateDoc(word, {
-    ...word_data, status, updated_at: Timestamp.now(), updated_by,
+    ...word_data, status, updated_at: Timestamp.now(), updated_by, sentences: word_data.sentences || [],
   });
   return revWord;
 };

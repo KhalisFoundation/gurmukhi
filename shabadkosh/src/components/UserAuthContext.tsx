@@ -48,7 +48,7 @@ export const UserAuthContextProvider = ({ children }: { children:ReactElement })
           if (!found) {
             const localUser = doc(firestore, `users/${uid}`);
             setDoc(localUser, {
-              role: roles.creator,
+              role: roles.unassigned,
               email,
               displayName: displayName ?? email?.split('@')[0],
               created_at: Timestamp.now(),

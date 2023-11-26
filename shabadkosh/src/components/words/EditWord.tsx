@@ -15,7 +15,7 @@ import {
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, cstatus, qtypes, STATUS,
+  astatus, rstatus, cstatus, qtypes, STATUS, reviewStatus,
 } from '../constants';
 import {
   addQuestion,
@@ -38,6 +38,7 @@ import {
   setOptionsDataForSubmit,
   splitAndClear,
   splitAndCapitalize,
+  removeExtraSpaces,
 } from '../util';
 import SupportWord from '../util/SupportWord';
 import Options from '../util/Options';
@@ -477,11 +478,11 @@ const EditWord = () => {
       updateWord(
         getWord,
         {
-          word: form.word,
-          translation: form.translation,
-          meaning_punjabi: form.meaning_punjabi ?? '',
-          meaning_english: form.meaning_english ?? '',
-          part_of_speech: form.part_of_speech ?? '',
+          word: removeExtraSpaces(form.word),
+          translation: removeExtraSpaces(form.translation),
+          meaning_punjabi: removeExtraSpaces(form.meaning_punjabi),
+          meaning_english: removeExtraSpaces(form.meaning_english),
+          part_of_speech: removeExtraSpaces(form.part_of_speech),
           synonyms: form.synonyms,
           antonyms: form.antonyms,
           images: splitAndClear(form.images) ?? [],
@@ -490,7 +491,7 @@ const EditWord = () => {
           updated_at: Timestamp.now(),
           created_by: form.created_by ?? user.email,
           updated_by: user.email ?? '',
-          notes: form.notes ?? '',
+          notes: removeExtraSpaces(form.notes),
           is_for_support: form.is_for_support ?? false,
         },
       )
@@ -878,7 +879,7 @@ const EditWord = () => {
           <Button variant="primary" type="submit">
             Submit
           </Button>
-          {word.status && cstatus.includes(word.status)
+          {word.status && !reviewStatus.includes(word.status)
             ? (
               <Button variant="primary" type="button" onClick={(e) => sendForReview(e)}>
                 {t('SEND_FOR_REVIEW')}
@@ -888,11 +889,8 @@ const EditWord = () => {
           {word.status && [
             roles.reviewer,
             roles.admin,
-          ].includes(user.role) && [
-            STATUS.REVIEW_ENGLISH,
-            STATUS.REVIEW_FINAL,
-          ].includes(word.status)
-            ? (
+          ].includes(user.role)
+          && reviewStatus.includes(word.status) ? (
               <Button variant="primary" type="button" onClick={(e) => sendForReview(e, 'approve')}>
                 {t('APPROVE')}
               </Button>
