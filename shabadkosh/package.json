@@ -43,7 +43,7 @@
     "build": "react-scripts build",
     "test": "CI=true react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "lint": "eslint ."
+    "lint": "eslint src/**/*.ts{,x}"
   },
   "eslintConfig": {
     "extends": [

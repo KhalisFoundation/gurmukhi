@@ -243,15 +243,8 @@ const EditWord = () => {
   };
 
   // change optionData to Option[]
-  const changeQOptions = (id: string, optionData: Option[], type = '') => {
-    // event.preventDefault()
-    const questionType = (type as any)?.value;
+  const changeQOptions = (id: string, optionData: Option[]) => {
     const updatedQuestions = questions.map((question, questionId) => {
-      const lastOption = optionData[optionData.length - 1];
-      if (lastOption.option && lastOption.option.includes(' ') && questionType !== qtypes.MEANING) {
-        alert(text('OPTION_NO_SPACES'));
-        return question;
-      }
       switch (id) {
       case `options${questionId}`:
         return {
@@ -331,7 +324,7 @@ const EditWord = () => {
         formData.questions = setOptionsDataForSubmit(questions);
         formData.is_for_support = support;
         const wordData = await createWordData(formData, synonyms, antonyms, user, setErrorMessage, type, word.status);
-        wordData.wordlists = selectedWordlists.map((docu) => docu.id);
+        wordData.wordlists = selectedWordlists ? selectedWordlists.map((docu) => docu.id) : [];
         setWordInWordlists(selectedWordlists, removedWordlists, wordId as string);
         editWord(wordData);
       }
@@ -573,21 +566,14 @@ const EditWord = () => {
             {text('SUBMIT')}
           </Button>
 
-          {word.status && !reviewStatus.includes(word.status) ? (
-            <Button variant="primary" type="button" onClick={(e) => sendForReview(e)}>
-              {t('SEND_FOR_REVIEW')}
-            </Button>
-          ) : null}
-
           {word.status && [
             roles.reviewer,
             roles.admin,
-          ].includes(user.role)
-          && reviewStatus.includes(word.status) ? (
-            <Button variant="primary" type="button" onClick={(e) => sendForReview(e, 'approve')}>
-              {t('APPROVE')}
-            </Button>
-          ) : null }
+          ].includes(user.role) && reviewStatus.includes(word.status) ? (
+              <Button variant="primary" type="button" onClick={handleApprove}>
+                {text('APPROVE')}
+              </Button>
+            ) : null }
         </div>
       </Form>
       {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}

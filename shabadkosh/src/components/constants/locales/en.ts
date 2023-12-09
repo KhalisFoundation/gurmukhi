@@ -20,7 +20,6 @@ export default {
   BIN: '🗑️',
   CHECK: '✅',
   CHOOSE_WORDLIST: 'Choose Wordlist',
-  CONFIRM_REVIEW: 'Are you sure you want to send this to review? \n You\'ll not be able to edit this again.',
   CONFIRM: 'Are you sure you want to {{action}} : {{what}}?',
   CONTACT: 'Contact',
   CONTACT_ADMIN: 'Contact the admin to get reviewer/admin access.<newline />Do not have an account?',

@@ -166,15 +166,7 @@ const AddWord = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    if (formValues.status?.includes('review')) {
-      const response = confirm(text('CONFIRM_REVIEW'));
-      if (!response) {
-        setIsLoading(false);
-        return;
-      } else {
-        setIsLoading(true);
-      }
-    }
+    setIsLoading(true);
 
     const form = event.currentTarget;
     if (form.checkValidity() === false) {
@@ -210,7 +202,7 @@ const AddWord = () => {
         formData.sentences = sentences;
         formData.questions = setOptionsDataForSubmit(questions);
         const wordData = await createWordData(formData, synonyms, antonyms, user, setErrorMesssage);
-        wordData.wordlists = selectedWordlists.map((docu) => docu.id);
+        wordData.wordlists = selectedWordlists ? selectedWordlists.map((docu) => docu.id) : [];
         addNewWord(wordData);
       }
     }
@@ -440,8 +432,10 @@ const AddWord = () => {
         <Card className="d-flex justify-content-center align-items-center background">
           <Card.Body className="rounded p-4 p-sm-3">
             <h3>{text('SUCCESS_ADD_NEW', { for: 'word' })}</h3>
-            <Button variant="primary" onClick={unsetSubmitted}>{text('ADD_ANOTHER', { what: text('WORD') })}</Button>
-            <Button variant="primary" onClick={() => navigate(routes.words)}>{text('BACK_TO', { page: 'words' })}</Button>
+            <div className="d-flex justify-content-around">
+              <Button variant="primary" onClick={unsetSubmitted}>{text('ADD_ANOTHER', { what: text('WORD') })}</Button>
+              <Button variant="primary" onClick={() => navigate(routes.words)}>{text('BACK_TO', { page: 'words' })}</Button>
+            </div>
           </Card.Body>
         </Card>
       ) : null}

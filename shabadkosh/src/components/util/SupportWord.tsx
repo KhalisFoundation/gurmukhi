@@ -35,7 +35,7 @@ const SupportWord = ({
     event.preventDefault();
     if (option.includes(':')) {
       const [gurmukhi, english] = option.split(':').map((val) => val.trim());
-      if (gurmukhi.match(regex.gurmukhiWordRegex) && english.match(regex.englishQuestionRegex)) {
+      if (gurmukhi.match(regex.gurmukhiSentenceRegex)) {
         const optionData = {
           value: gurmukhi,
           translation: english,

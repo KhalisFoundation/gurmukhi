@@ -3,7 +3,6 @@ import {
   SentenceType, QuestionType, Option, TimestampType, MiniWord,
 } from '../../types';
 import { createMultipleWordsAtOnce } from './controller';
-import { qtypes } from '../constants';
 import { User } from 'firebase/auth';
 import { TFunction } from 'i18next';
 
@@ -48,18 +47,33 @@ export const separateIdsAndNewSentences = (sentences: SentenceType[]): [Sentence
 
 export const hasValidOptions = (questions: QuestionType[]): boolean => {
   if (!questions) return false;
-  
-  for (const question of questions) {
-    if (question.type !== qtypes.MEANING) {
-      for (const option of question.options) {
-        if (!('id' in option) && option.option && option.option.includes(' ')) {
-          return false;
+  return true;
+};
+
+export const separatePhrasesAndOptions = (options: Option[]): [Option[], string[], Option[]] => {
+  const optionsList: Option[] = [];
+  const optionsIdList: string[] = [];
+  const phrasesList: Option[] = [];
+  options.forEach((option: Option) => {
+    const duplicate = optionsList.find(
+      (obj) => obj.option === option.option,
+    );
+    if (!duplicate) {
+      if (((option.option as string).match(/ /g) || []).length > 1) {
+        phrasesList.push(option);
+      } else {
+        if (typeof option === 'string') {
+          optionsIdList.push(option);
+        } else {
+          optionsList.push({
+            option: option.option,
+            translation: option.translation,
+          } as Option);
         }
       }
     }
-  }
-
-  return true;
+  });
+  return [optionsList, optionsIdList, phrasesList];
 };
 
 export const separateIdsAndNewOptions = (options: Option[]): [Option[], string[]] => {
@@ -111,19 +125,18 @@ export const createOptions = async (optionsList: Option[], user: User) => {
 
 export const createWordsFromOptions = async (questions: QuestionType[], user: User) => {
   return Promise.all(questions.map(async (question: QuestionType) => {
-    if (question.type !== qtypes.MEANING) {
-      const [newOptionsList, oldOptionsIdList] = separateIdsAndNewOptions(question.options);
-      const optionsIdList = oldOptionsIdList;
-      const newOptionsIdList = await createOptions(newOptionsList as Option[], user);
-      optionsIdList.push(...newOptionsIdList);
-      const questionData = {
-        ...question,
-        options: optionsIdList,
-      };
-      return questionData;
-    } else {
-      return question;
-    }
+    const [newOptionsList, optionsIdList, phrasesList] = separatePhrasesAndOptions(question.options);
+    const newOptionsIdList = await createOptions(newOptionsList as Option[], user);
+    const optionsList: (Option | string)[] = [
+      ...optionsIdList,
+      ...newOptionsIdList,
+      ...phrasesList,
+    ];
+    const questionData = {
+      ...question,
+      options: optionsList,
+    };
+    return questionData;
   }));
 };
 

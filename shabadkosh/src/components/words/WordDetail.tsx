@@ -126,13 +126,19 @@ const WordDetail = () => {
 
     const fetchWordsList = async (unfoundWords: string[] | MiniWord[]) => {
       setIsLoading(true);
-      const wordsData = await getWordsByIdList(unfoundWords as string[]);
+      let foundWords = [] as MiniWord[];
+      const wordsData = await getWordsByIdList(unfoundWords as string[]).then((words) => {
+        setIsLoading(false);
+        return words;
+      });
       if (wordsData && wordsData !== undefined) {
-        unfoundWords = wordsData.map((wordData) => ({
-          id: wordData.id, ...wordData.data(),
+        foundWords = wordsData.map((wordData) => ({
+          id: wordData.id,
+          word: wordData.data().word,
+          translation: wordData.data().translation,
         } as MiniWord));
       }
-      setIsLoading(false);
+      return foundWords;
     };
 
     const fetchSentence = async () => {
@@ -142,9 +148,9 @@ const WordDetail = () => {
         setIsLoading(false);
       });
       if (!querySnapshot.empty) {
-        const newSentences = querySnapshot.docs.map((docu) => ({
-          id: docu.id,
-          ...docu.data(),
+        const newSentences = querySnapshot.docs.map((sentence) => ({
+          id: sentence.id,
+          ...sentence.data(),
         }));
         setSentences(newSentences);
       }
@@ -185,10 +191,10 @@ const WordDetail = () => {
 
     fetchWords().then(() => {
       fetchWord().then(() => {
-        fetchWordsList(synonymsList).then(() => {
-          fetchWordsList(antonymsList).then(() => {
+        fetchWordsList(synonymsList).then((synonyms) => {
+          fetchWordsList(antonymsList).then((antonyms) => {
             setWord((prev) => ({
-              ...prev, synonyms: synonymsList as MiniWord[], antonyms: antonymsList as MiniWord[],
+              ...prev, synonyms: synonyms as MiniWord[], antonyms: antonyms as MiniWord[],
             }));
             fetchSentence();
             fetchQuestions();
