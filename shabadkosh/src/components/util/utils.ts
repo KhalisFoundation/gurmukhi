@@ -58,8 +58,8 @@ export const separatePhrasesAndOptions = (options: Option[]): [Option[], string[
     const duplicate = optionsList.find(
       (obj) => obj.option === option.option,
     );
-    if (!duplicate) {
-      if (((option.option as string).match(/ /g) || []).length > 1) {
+    if (!duplicate && option) {
+      if (option.option && (option.option.match(/ /g) || []).length > 1) {
         phrasesList.push(option);
       } else {
         if (typeof option === 'string') {
@@ -196,9 +196,11 @@ export const splitAndClear = (stringData: string | string[]) => {
 };
 
 export const compareUpdatedAt = (timestamp1: TimestampType, timestamp2: TimestampType) => {
-  if (timestamp1 < timestamp2) {
+  const time1 = new Timestamp(timestamp1.seconds, timestamp1.nanoseconds).toMillis();
+  const time2 = new Timestamp(timestamp2.seconds, timestamp2.nanoseconds).toMillis();
+  if (time1 < time2) {
     return 1;
-  } if (timestamp1 > timestamp2) {
+  } if (time1 > time2) {
     return -1;
   }
   return 0;

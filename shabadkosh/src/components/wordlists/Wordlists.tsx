@@ -44,7 +44,7 @@ const Wordlists = () => {
 
   const sortWordlists = (unwordlists: WordlistType[]) => {
     const sortedWordlists = unwordlists.sort(
-      (p1, p2) => compareUpdatedAt(p1.created_at, p2.created_at),
+      (p1, p2) => compareUpdatedAt(p1.updated_at, p2.updated_at),
     );
 
     return sortedWordlists;

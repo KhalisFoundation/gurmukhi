@@ -44,7 +44,7 @@ const Users = () => {
   }, []);
 
   const sortedUsers = users.sort(
-    (p1, p2) => compareUpdatedAt(p1.created_at, p2.created_at),
+    (p1, p2) => compareUpdatedAt(p1.updated_at, p2.updated_at),
   );
 
   const delUser = (lUser: NewUserType) => {

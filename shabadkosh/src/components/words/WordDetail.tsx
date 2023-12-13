@@ -35,7 +35,7 @@ import {
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, cstatus, STATUS, EmptyWord, reviewStatus,
+  astatus, rstatus, cstatus, STATUS, EmptyWord, unreviewableStatus,
 } from '../constants';
 import { capitalize, convertTimestampToDateString } from '../util/utils';
 import roles from '../constants/roles';
@@ -125,18 +125,31 @@ const WordDetail = () => {
     };
 
     const fetchWordsList = async (unfoundWords: string[] | MiniWord[]) => {
+      if (!unfoundWords || unfoundWords.length === 0) {
+        return [];
+      }
       setIsLoading(true);
-      let foundWords = [] as MiniWord[];
-      const wordsData = await getWordsByIdList(unfoundWords as string[]).then((words) => {
+      const foundWords = [] as MiniWord[];
+      const unfoundIdList = [] as string[];
+      unfoundWords.map((unfoundWord) => {
+        if (typeof unfoundWord === 'string') {
+          unfoundIdList.push(unfoundWord);
+        } else {
+          if (unfoundWord.word && unfoundWord.translation) {
+            foundWords.push(unfoundWord as MiniWord);
+          }
+        }
+      });
+      const wordsData = await getWordsByIdList(unfoundIdList as string[]).then((words) => {
         setIsLoading(false);
         return words;
       });
       if (wordsData && wordsData !== undefined) {
-        foundWords = wordsData.map((wordData) => ({
+        foundWords.push(...wordsData.map((wordData) => ({
           id: wordData.id,
           word: wordData.data().word,
           translation: wordData.data().translation,
-        } as MiniWord));
+        } as MiniWord)));
       }
       return foundWords;
     };
@@ -305,7 +318,7 @@ const WordDetail = () => {
 
           <ButtonGroup className="d-flex align-self-end">
             {((word.status && statusList.includes(word.status ?? STATUS.CREATING_ENGLISH)) || word.is_for_support) ? <Button href={editUrl}>{text('EDIT')}</Button> : null}
-            {(word.status && !reviewStatus.includes(word.status)) ? <Button onClick={() => revWord(word, 'review')} variant="success">{text('SEND_TO_REVIEW')}</Button> : null}
+            {(word.status && !unreviewableStatus.includes(word.status)) ? <Button onClick={() => revWord(word, 'review')} variant="success">{text('SEND_TO_REVIEW')}</Button> : null}
             {(word.status && [roles.reviewer, roles.admin].includes(user.role) && [STATUS.REVIEW_ENGLISH, STATUS.REVIEW_FINAL].includes(word.status)) ? <Button onClick={() => revWord(word, 'approve')} variant="success">{text('APPROVE')}</Button> : null}
             {user.role === roles.admin ? <Button onClick={() => removeWord(word, setIsLoading, navigate, text)} variant="danger">{text('DELETE')}</Button> : null}
           </ButtonGroup>

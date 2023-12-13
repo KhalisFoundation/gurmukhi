@@ -55,7 +55,7 @@ const ViewDictionary = () => {
 
   const sortWords = (unwords: WordType[]) => {
     const sortedWords = unwords.sort(
-      (p1, p2) => compareUpdatedAt(p1.created_at, p2.created_at),
+      (p1, p2) => compareUpdatedAt(p1.updated_at, p2.updated_at),
     );
     return sortedWords;
   };
@@ -70,6 +70,8 @@ const ViewDictionary = () => {
       filteredList = filteredList.filter((val) => val.updated_by === user.email);
     } else if (filterVal === 'syn_or_ant') {
       filteredList = filteredList.filter((val) => val.is_for_support);
+    } else if (filterVal === 'not_syn_or_ant') {
+      filteredList = filteredList.filter((val) => !val.is_for_support);
     }
 
     if (statusVal !== 'all') {
@@ -249,6 +251,7 @@ const ViewDictionary = () => {
               <option key="amwon" value="am_working_on">{text('AM_WORKING_ON')}</option>
               <option key="lupme" value="updated_by_me">{text('LAST_UPDATED_BY_ME')}</option>
               <option key="synant" value="syn_or_ant">{text('SYN_OR_ANT')}</option>
+              <option key="notsynant" value="not_syn_or_ant">{text('NOT_SYN_OR_ANT')}</option>
             </Form.Select>
           </Form.Group>
 
@@ -256,7 +259,7 @@ const ViewDictionary = () => {
             <Form.Label>{text('STATUS')}</Form.Label>
             <Form.Select defaultValue={status}>
               <option key="all" value="all">{text('SHOW_ALL')}</option>
-              {statusList.length > 0 && statusList.map((statusValue) => {
+              {astatus.length > 0 && astatus.map((statusValue) => {
                 const capitalizedStatus = splitAndCapitalize(statusValue);
                 return (
                   <option key={statusValue} value={statusValue}>{capitalizedStatus}</option>

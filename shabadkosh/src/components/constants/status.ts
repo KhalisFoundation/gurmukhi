@@ -78,3 +78,10 @@ export const reviewStatus = [
   STATUS.REVIEW_ENGLISH,
   STATUS.REVIEW_FINAL,
 ];
+
+export const unreviewableStatus = [
+  STATUS.REVIEW_ENGLISH,
+  STATUS.REVIEW_FINAL,
+  STATUS.ACTIVE,
+  STATUS.INACTIVE,
+];

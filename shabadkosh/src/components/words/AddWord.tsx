@@ -201,8 +201,8 @@ const AddWord = () => {
       } else {
         formData.sentences = sentences;
         formData.questions = setOptionsDataForSubmit(questions);
+        formData.wordlists = selectedWordlists ? selectedWordlists.map((wordlist) => wordlist.id) : [];
         const wordData = await createWordData(formData, synonyms, antonyms, user, setErrorMesssage);
-        wordData.wordlists = selectedWordlists ? selectedWordlists.map((docu) => docu.id) : [];
         addNewWord(wordData);
       }
     }

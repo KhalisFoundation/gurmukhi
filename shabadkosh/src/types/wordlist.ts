@@ -37,3 +37,8 @@ export interface MiniWordlist {
   id?: string,
   name?: string
 }
+
+export interface Wordlist {
+  id: string,
+  name?: string
+}

@@ -12,7 +12,7 @@ import Multiselect from 'multiselect-react-dropdown';
 import { useTranslation } from 'react-i18next';
 import { firestore } from '../../firebase';
 import {
-  SentenceType, MiniWord, NewWordType, Option, MiniWordlist, WordlistType, QuestionType,
+  SentenceType, MiniWord, NewWordType, Option, MiniWordlist, WordlistType, QuestionType, Wordlist,
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
@@ -77,7 +77,7 @@ const EditWord = () => {
   const [synonyms, setSynonyms] = useState<MiniWord[]>([]);
   const [antonyms, setAntonyms] = useState<MiniWord[]>([]);
   const [support, setSupport] = useState<boolean>(false);
-  const [selectedWordlists, setSelectedWordlists] = useState<MiniWordlist[]>([]);
+  const [selectedWordlists, setSelectedWordlists] = useState<Wordlist[]>([]);
   const [removedWordlists, setRemovedWordlists] = useState<MiniWordlist[]>([]);
   const [validated, setValidated] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -98,7 +98,7 @@ const EditWord = () => {
   }
 
   useEffect(() => {
-    let localWordlist = [] as MiniWordlist[];
+    let localWordlist = [] as Wordlist[];
     let allWords = [] as MiniWord[];
     let allWordlists = [] as MiniWordlist[];
 
@@ -320,11 +320,11 @@ const EditWord = () => {
         alert(text('ALERT_QUESTION_OPTIONS'));
         setIsLoading(false);
       } else {
-        formData.sentences = sentences ?? [];
+        formData.sentences = (sentences && sentences !== undefined) ? sentences : [];
         formData.questions = setOptionsDataForSubmit(questions);
         formData.is_for_support = support;
+        formData.wordlists = selectedWordlists ? selectedWordlists.map((wordlist) => wordlist.id) : [];
         const wordData = await createWordData(formData, synonyms, antonyms, user, setErrorMessage, type, word.status);
-        wordData.wordlists = selectedWordlists ? selectedWordlists.map((docu) => docu.id) : [];
         setWordInWordlists(selectedWordlists, removedWordlists, wordId as string);
         editWord(wordData);
       }

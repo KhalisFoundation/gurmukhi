@@ -82,6 +82,7 @@ export default {
   NOT_FOUND: '{{what}} not found!',
   NO_USERS_FOUND: 'No users found. Please add some.',
   NO_VALS: 'No {{vals}} found. Please add some.',
+  NOT_SYN_OR_ANT: 'Not a synonym/antonym',
   OPTION: 'Option',
   OPTION_NO_SPACES: 'Option cannot contain spaces!',
   OPTIONS: 'Options',

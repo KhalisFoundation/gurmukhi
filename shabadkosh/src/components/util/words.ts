@@ -215,6 +215,12 @@ export const saveWord = async (
       });
 
       questions.forEach((question: QuestionType) => {
+        let finalAnswer = 0;
+        if (!question.answer || question.answer >= question.options.length) {
+          finalAnswer = 0;
+        } else {
+          finalAnswer = question.answer;
+        }
         if (question.id === undefined || type === SUBMIT_TYPE.CREATE || !updated_word_id) {
           addQuestion({
             ...question,
@@ -222,6 +228,7 @@ export const saveWord = async (
             options: question.options ?? [],
             type: question.type ?? qtypes.CONTEXT,
             word_id: id,
+            answer: finalAnswer,
           });
         } else {
           const getQuestion = doc(firestore, `questions/${question.id}`);
@@ -231,6 +238,7 @@ export const saveWord = async (
             options: question.options ?? [],
             type: question.type ?? qtypes.CONTEXT,
             word_id: updated_word_id,
+            answer: finalAnswer,
           });
         }
       });
@@ -261,6 +269,7 @@ export const createWordData = async (
     formData.synonyms = synonymIds;
     formData.antonyms = antonymsIds;
     formData.questions = newQuestions;
+    formData.wordlists = formData.wordlists;
 
     formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
     let status = formData.status ?? STATUS.CREATING_ENGLISH;
@@ -274,6 +283,7 @@ export const createWordData = async (
     formData.status = status;
     return formData;
   } catch (error: any) {
+    // console.log('error from createWordData: ', error);
     setErrorMessage(error.message);
     return;
   }
