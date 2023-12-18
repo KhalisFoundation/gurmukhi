@@ -49,5 +49,5 @@
       "version": "detect"
     }
   },
-  "ignorePatterns": ["webpack.config.js"]
+  "ignorePatterns": ["webpack.config.js", "build/", "dist/", "node_modules/"]
 }

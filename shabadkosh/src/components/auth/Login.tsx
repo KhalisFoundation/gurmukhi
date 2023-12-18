@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Form, Alert, Card, Button,
 } from 'react-bootstrap';
-import { UserCredential } from 'firebase/auth';
 import GoogleButton from 'react-google-button';
 import { Trans, useTranslation } from 'react-i18next';
 import { useUserAuth } from '../UserAuthContext';
@@ -14,51 +13,48 @@ import routes from '../constants/routes';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const { logIn, signInWithGoogle, logOut } = useUserAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    setError('');
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage('');
     try {
-      await logIn(email, password).then((data: UserCredential) => {
-        const { uid } = data.user;
-        if (email) {
-          checkUser(uid, email).then((found) => {
-            if (!found) {
-              logOut();
-              setError('Invalid user');
-            }
-          });
+      const userCredential = await logIn(email, password);
+      const { uid } = userCredential.user;
+      if (email) {
+        const found = await checkUser(uid, email);
+        if (!found) {
+          logOut();
+          setErrorMessage('Invalid user');
         }
-      });
+      }
       navigate(routes.words);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (error: any) {
+      setErrorMessage(error.message);
     }
   };
 
-  const handleGoogleSignIn = async (e: any) => {
-    e.preventDefault();
+  const handleGoogleSignIn = async (event: React.MouseEvent) => {
+    event.preventDefault();
     try {
       // left with getting confirmation of logging to navigate to homepage
-      await signInWithGoogle().then((success: any) => {
-        if (success) {
-          navigate(routes.words);
-        }
-      });
-    } catch (err: any) {
-      console.log(err.message);
+      const success = await signInWithGoogle();
+      if (success) {
+        navigate(routes.words);
+      }
+    } catch (error: any) {
+      setErrorMessage(error.message);
     }
   };
 
   return (
     <div className="container">
       <div className="p-4 box d-flex flex-column align-items-center">
-        <h2 className="mb-3">{t('KOSH_LOGIN')}</h2>
-        {error && <Alert variant="danger">{error}</Alert>}
+        <h2 className="mb-3">{text('KOSH_LOGIN')}</h2>
+        {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="formBasicEmail">
             <Form.Control
@@ -78,7 +74,7 @@ const Login = () => {
 
           <div className="d-grid gap-2">
             <Button variant="primary" type="submit">
-              {t('LOGIN')}
+              {text('LOGIN')}
             </Button>
           </div>
         </Form>
@@ -94,10 +90,10 @@ const Login = () => {
           className="p-4 box mt-3 text-center w-50"
         >
           <Trans components={{ newline: <br /> }}>CONTACT_ADMIN</Trans>
-          <a href={routes.signup}>{t('SIGNUP')}</a>
+          <a href={routes.signup}>{text('SIGNUP')}</a>
 
           <br />
-          <Link to="/forgot-password">{t('FORGOT_PASSWORD')}</Link>
+          <Link to="/forgot-password">{text('FORGOT_PASSWORD')}</Link>
         </Card>
       </div>
     </div>

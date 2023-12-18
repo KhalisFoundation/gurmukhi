@@ -17,7 +17,8 @@ import {
 } from 'firebase/firestore';
 import { firestore as db, firestore } from '../../firebase';
 import { MiniWord, NewWordType } from '../../types/word';
-import { MiniWordlist } from '../../types/wordlist';
+import { MiniWordlist, NewWordlistType, WordlistType } from '../../types/wordlist';
+import { Option, QuestionData, SentenceType } from '../../types';
 
 export default db;
 
@@ -27,8 +28,8 @@ export const wordsCollection = collection(db, 'words');
 // check if word already exists
 export const isWordNew = async (word: string, exception_id = ' ') => {
   if (word && word !== undefined) {
-    const q = query(wordsCollection, where('word', '==', word), where(documentId(), '!=', exception_id));
-    const result = await getDocs(q);
+    const queryStatement = query(wordsCollection, where('word', '==', word), where(documentId(), '!=', exception_id));
+    const result = await getDocs(queryStatement);
     return result.empty;
   }
   return true;
@@ -58,10 +59,15 @@ export const deleteWord = async (word: DocumentReference) => {
 // get word from words collection
 export const getWords = async () => {
   const querySnapshot = await getDocs(wordsCollection);
-  const words: any[] = [];
+  const words: NewWordType[] = [];
   querySnapshot.forEach((wordData) => {
     words.push({
-      ...wordData.data(), id: wordData.id,
+      ...wordData.data(),
+      id: wordData.id,
+      created_at: wordData.data().created_at,
+      created_by: wordData.data().created_by,
+      updated_at: wordData.data().updated_at,
+      updated_by: wordData.data().updated_by,
     });
   });
   return words;
@@ -83,8 +89,8 @@ export const reviewWord = async (
 // get word from a list of word ids
 export const getWordsByIdList = async (id_list: string[]) => {
   if (id_list && id_list.length > 0) {
-    const q = query(wordsCollection, where(documentId(), 'in', id_list));
-    const result = await getDocs(q);
+    const queryStatement = query(wordsCollection, where(documentId(), 'in', id_list));
+    const result = await getDocs(queryStatement);
     return result.docs;
   }
   return [];
@@ -93,14 +99,14 @@ export const getWordsByIdList = async (id_list: string[]) => {
 // Sentences collection
 export const sentencesCollection = collection(db, 'sentences');
 
-export const addSentence = async (sentence_data: any) => {
+export const addSentence = async (sentence_data: SentenceType) => {
   const newSentence = await addDoc(sentencesCollection, {
     ...sentence_data,
   });
   return newSentence.id;
 };
 
-export const updateSentence = async (sentence: DocumentReference, sentence_data: any) => {
+export const updateSentence = async (sentence: DocumentReference, sentence_data: SentenceType) => {
   const updatedSentence = await updateDoc(sentence, {
     ...sentence_data,
   });
@@ -114,28 +120,34 @@ export const deleteSentence = async (sentence: DocumentReference) => {
 
 // delete sentence by word id
 export const deleteSentenceByWordId = async (word_id: string) => {
-  const q = query(sentencesCollection, where('word_id', '==', word_id));
-  const querySnapshot = await getDocs(q).then((data) => {
-    data.docs.forEach((sentenceData) => {
-      if (sentenceData.data().word_id === word_id) {
-        deleteDoc(sentenceData.ref);
-      }
-    });
+  const queryStatement = query(sentencesCollection, where('word_id', '==', word_id));
+  const batch = writeBatch(firestore);
+  const querySnapshot = await getDocs(queryStatement);
+
+  querySnapshot.docs.forEach((sentenceData) => {
+    batch.delete(sentenceData.ref);
   });
-  return querySnapshot;
+
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 // Questions collection
 export const questionsCollection = collection(db, 'questions');
 
-export const addQuestion = async (question_data: any) => {
+export const addQuestion = async (question_data: QuestionData) => {
   const newQuestion = await addDoc(questionsCollection, {
     ...question_data,
   });
   return newQuestion.id;
 };
 
-export const updateQuestion = async (question: DocumentReference, question_data: any) => {
+export const updateQuestion = async (question: DocumentReference, question_data: QuestionData) => {
   const updatedQuestion = await updateDoc(question, {
     ...question_data,
   });
@@ -149,21 +161,26 @@ export const deleteQuestion = async (question: DocumentReference) => {
 
 // delete question by word id
 export const deleteQuestionByWordId = async (word_id: string) => {
-  const q = query(questionsCollection, where('word_id', '==', word_id));
-  const querySnapshot = await getDocs(q).then((data) => {
-    data.docs.forEach((questionData) => {
-      if (questionData.data().word_id === word_id) {
-        deleteDoc(questionData.ref);
-      }
-    });
+  const queryStatement = query(questionsCollection, where('word_id', '==', word_id));
+  const batch = writeBatch(firestore);
+  const querySnapshot = await getDocs(queryStatement);
+  querySnapshot.docs.forEach((questionData) => {
+    batch.delete(questionData.ref);
   });
-  return querySnapshot;
+
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 // Wordlists collection
 export const wordlistsCollection = collection(db, 'wordlists');
 
-export const addNewWordlist = async (wordlist_data: any) => {
+export const addNewWordlist = async (wordlist_data: NewWordlistType) => {
   const newWordlist = await addDoc(wordlistsCollection, {
     ...wordlist_data,
   });
@@ -175,7 +192,7 @@ export const getWordlist = async (wordlist_ref: DocumentReference) => {
   return gotWlist;
 };
 
-export const updateWordlist = async (wordlist: DocumentReference, wordlist_data: any) => {
+export const updateWordlist = async (wordlist: DocumentReference, wordlist_data: WordlistType) => {
   const updatedWordlist = await updateDoc(wordlist, {
     ...wordlist_data,
   });
@@ -190,8 +207,8 @@ export const deleteWordlist = async (wordlist: DocumentReference) => {
 // get word from a list of word ids
 export const getWordlistsByIdList = async (id_list: string[]) => {
   if (id_list.length > 0) {
-    const q = query(wordlistsCollection, where(documentId(), 'in', id_list));
-    const result = await getDocs(q);
+    const queryStatement = query(wordlistsCollection, where(documentId(), 'in', id_list));
+    const result = await getDocs(queryStatement);
     return result.docs;
   }
   return [];
@@ -199,14 +216,14 @@ export const getWordlistsByIdList = async (id_list: string[]) => {
 
 // get wordlists with a word id as a part of it
 export const getWordlistsByWordId = async (word_id: string) => {
-  const q = query(wordlistsCollection, where('words', 'array-contains', word_id));
-  const result = await getDocs(q);
+  const queryStatement = query(wordlistsCollection, where('words', 'array-contains', word_id));
+  const result = await getDocs(queryStatement);
   return result.docs;
 };
 
 export const getWordsFromSupportWordIds = async (word_id: string, type: string) => {
-  const q = query(wordsCollection, where(type, 'array-contains', word_id));
-  const result = await getDocs(q);
+  const queryStatement = query(wordsCollection, where(type, 'array-contains', word_id));
+  const result = await getDocs(queryStatement);
   return result.docs;
 };
 
@@ -235,41 +252,55 @@ export const setWordInWordlists = async (
       return null;
     });
   }
-  const res = await batch.commit();
-  return res;
+
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 export const removeWordFromWordlists = async (word_id: string) => {
   const batch = writeBatch(firestore);
-  await getWordlistsByWordId(word_id).then((ele) => {
-    ele.map((val) => {
-      const wlRef = doc(firestore, 'wordlists', val.id);
-      batch.update(wlRef, {
-        words: arrayRemove(word_id),
-      });
-      return null;
+  const wordlist = await getWordlistsByWordId(word_id);
+  wordlist.forEach((val) => { 
+    const wlRef = doc(firestore, 'wordlists', val.id);
+    batch.update(wlRef, {
+      words: arrayRemove(word_id),
     });
   });
-  const res = await batch.commit();
-  return res;
+
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 export const removeWordFromSupport = async (word_id: string) => {
   const batch = writeBatch(firestore);
-  await getWordsFromSupportWordIds(word_id, 'synonyms').then(async (syn) => {
-    await getWordsFromSupportWordIds(word_id, 'antonyms').then((ant) => {
-      const eleIds = syn.concat(ant);
-      eleIds.map((val) => {
-        const wordRef = doc(firestore, 'words', val.id);
-        batch.update(wordRef, {
-          synonyms: arrayRemove(word_id), antonyms: arrayRemove(word_id),
-        });
-        return null;
-      });
+  const synonyms = await getWordsFromSupportWordIds(word_id, 'synonyms');
+  const antonyms = await getWordsFromSupportWordIds(word_id, 'antonyms');
+  const supportWordIds = synonyms.concat(antonyms);
+  supportWordIds.forEach((word) => {
+    const wordRef = doc(firestore, 'words', word.id);
+    batch.update(wordRef, {
+      synonyms: arrayRemove(word_id),
+      antonyms: arrayRemove(word_id),
     });
   });
-  const res = await batch.commit();
-  return res;
+
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
 export const addWordIdToWordlists = async (wordlist_ids: string[], word_id: string) => {
@@ -283,23 +314,33 @@ export const addWordIdToWordlists = async (wordlist_ids: string[], word_id: stri
       return null;
     });
   }
-  const res = await batch.commit();
-  return res;
+
+  try {
+    const res = await batch.commit();
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };
 
-export const createMultipleValsAtOnce = async (values: any[], collectionName: string) => {
+export const createMultipleWordsAtOnce = async (wordsList: MiniWord[] | Option[], collectionName: string) => {
   const batch = writeBatch(firestore);
-  const valIdList = [] as string[];
-  if (values.length > 0) {
-    values.map((val: any) => {
-      const valRef = doc(collection(firestore, collectionName));
-      valIdList.push(valRef.id);
-      batch.set(valRef, {
-        ...val,
+  const wordIdList = [] as string[];
+  if (wordsList.length > 0) {
+    wordsList.forEach((wordData: MiniWord | Option) => {
+      const wordRef = doc(collection(firestore, collectionName));
+      wordIdList.push(wordRef.id);
+      batch.set(wordRef, {
+        ...wordData,
       });
-      return null;
     });
   }
-  const res = await batch.commit().then(() => valIdList);
-  return res;
+  try {
+    const res = await batch.commit().then(() => wordIdList);
+    return res;
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
 };

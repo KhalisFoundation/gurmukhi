@@ -3,12 +3,12 @@ import { Card } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 
 const Contact = () => {
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
   return (
     <div>
       <Card>
         <Card.Body>
-          <Card.Title>{t('CONTACT')}</Card.Title>
+          <Card.Title>{text('CONTACT')}</Card.Title>
         </Card.Body>
       </Card>
     </div>

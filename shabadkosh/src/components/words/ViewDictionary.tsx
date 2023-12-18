@@ -11,20 +11,14 @@ import {
   Row,
 } from 'react-bootstrap';
 import {
-  DocumentData, QuerySnapshot, doc, onSnapshot,
+  DocumentData, QuerySnapshot, onSnapshot,
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  deleteQuestionByWordId,
-  deleteSentenceByWordId,
-  deleteWord,
-  removeWordFromSupport,
-  removeWordFromWordlists,
   wordsCollection,
 } from '../util/controller';
-import { NewWordType } from '../../types/word';
-import { firestore } from '../../firebase';
+import { WordType } from '../../types/word';
 import { useUserAuth } from '../UserAuthContext';
 import {
   STATUS,
@@ -36,6 +30,7 @@ import { compareUpdatedAt, splitAndCapitalize } from '../util/utils';
 import regex from '../constants/regex';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
+import { removeWord } from '../util/words';
 
 const ViewDictionary = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -43,10 +38,10 @@ const ViewDictionary = () => {
   const [filter, setFilter] = useState('');
   const [status, setStatus] = useState('all');
   const [listView, setListView] = useState<boolean>(false);
-  const [words, setWords] = useState<NewWordType[]>([]);
-  const [filteredWords, setFilteredWords] = useState<NewWordType[]>([]);
+  const [words, setWords] = useState<WordType[]>([]);
+  const [filteredWords, setFilteredWords] = useState<WordType[]>([]);
   const { user } = useUserAuth();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
   const navigate = useNavigate();
 
   let statusList = [] as string[];
@@ -58,9 +53,9 @@ const ViewDictionary = () => {
     statusList = cstatus;
   }
 
-  const sortWords = (unwords: NewWordType[]) => {
+  const sortWords = (unwords: WordType[]) => {
     const sortedWords = unwords.sort(
-      (p1, p2) => compareUpdatedAt(p1, p2),
+      (p1, p2) => compareUpdatedAt(p1.updated_at, p2.updated_at),
     );
     return sortedWords;
   };
@@ -75,6 +70,8 @@ const ViewDictionary = () => {
       filteredList = filteredList.filter((val) => val.updated_by === user.email);
     } else if (filterVal === 'syn_or_ant') {
       filteredList = filteredList.filter((val) => val.is_for_support);
+    } else if (filterVal === 'not_syn_or_ant') {
+      filteredList = filteredList.filter((val) => !val.is_for_support);
     }
 
     if (statusVal !== 'all') {
@@ -82,10 +79,6 @@ const ViewDictionary = () => {
     }
 
     setFilteredWords(sortWords(filteredList));
-  };
-
-  const handleSearch = async (event: any) => {
-    event.preventDefault();
   };
 
   useEffect(() => {
@@ -117,26 +110,6 @@ const ViewDictionary = () => {
 
   }, []);
 
-  const delWord = (deleted_word: any) => {
-    // add code to remove word_id from its respective wordlist
-    const response = window.confirm(`Are you sure you want to delete this word: ${deleted_word.word}? \n This action is not reversible.`);
-    if (response) {
-      const getWord = doc(firestore, `words/${deleted_word.id}`);
-      removeWordFromSupport(deleted_word.id).then(() => {
-        removeWordFromWordlists(deleted_word.id).then(() => {
-          deleteWord(getWord).then(() => {
-            deleteSentenceByWordId(deleted_word.id).then(() => {
-              deleteQuestionByWordId(deleted_word.id).then(() => {
-                setIsLoading(false);
-                navigate(routes.words);
-              });
-            });
-          });
-        });
-      });
-    }
-  };
-
   const wordsData = sortWords(filteredWords) && sortWords(filteredWords).length
     ? sortWords(filteredWords)?.map((word) => {
       const detailUrl = routes.word.replace(':wordid', word.id ?? '');
@@ -149,7 +122,7 @@ const ViewDictionary = () => {
           >
             <div className="ms-2 me-auto">
               <h3 className="fw-bold">{word.word}</h3>
-              <p>{word.translation}</p>
+              <p>{word.translation?.toLowerCase()}</p>
             </div>
             <div className="d-flex flex-column align-items-end">
               <ButtonGroup>
@@ -157,22 +130,22 @@ const ViewDictionary = () => {
                   href={detailUrl}
                   className="bg-transparent border-0"
                 >
-                  {t('EYE')}
+                  {text('EYE')}
                 </Button>
                 {Object.keys(statusList).includes(word.status ?? STATUS.CREATING_ENGLISH) ? (
                   <Button
                     href={editUrl}
                     className="bg-transparent border-0"
                   >
-                    {t('PEN')}
+                    {text('PEN')}
                   </Button>
                 ) : null }
                 {user?.role === roles.admin ? (
                   <Button
-                    onClick={() => delWord(word)}
+                    onClick={() => removeWord(word, setIsLoading, navigate, text)}
                     className="bg-transparent border-0"
                   >
-                    {t('BIN')}
+                    {text('BIN')}
                   </Button>
                 ) : null}
               </ButtonGroup>
@@ -201,7 +174,7 @@ const ViewDictionary = () => {
                 {word.word}
                 <br />
                 (
-                {word.translation}
+                {word.translation?.toLowerCase()}
                 )
               </Card.Title>
               <div className="d-flex flex-column align-items-end">
@@ -209,14 +182,14 @@ const ViewDictionary = () => {
                   {word.status}
                 </Badge>
                 <Badge pill bg="primary" text="white" hidden={!word.is_for_support}>
-                  {t('SYN_OR_ANT')}
+                  {text('SYN_OR_ANT')}
                 </Badge>
               </div>
             </div>
             <ButtonGroup>
-              <Button href={detailUrl} variant="success">{t('VIEW')}</Button>
-              {statusList.includes(word.status ?? STATUS.CREATING_ENGLISH) ? <Button href={editUrl}>{t('EDIT')}</Button> : null }
-              {user?.role === roles.admin ? <Button onClick={() => delWord(word)} variant="danger">{t('DELETE')}</Button> : null }
+              <Button href={detailUrl} variant="success">{text('VIEW')}</Button>
+              {statusList.includes(word.status ?? STATUS.CREATING_ENGLISH) ? <Button href={editUrl}>{text('EDIT')}</Button> : null }
+              {user?.role === roles.admin ? <Button onClick={() => removeWord(word, setIsLoading, navigate, text)} variant="danger">{text('DELETE')}</Button> : null }
             </ButtonGroup>
           </Card.Body>
         </Card>
@@ -235,16 +208,16 @@ const ViewDictionary = () => {
 
   if (words.length === 0) {
     if (isLoading) {
-      return <h2>{t('LOADING')}</h2>;
+      return <h2>{text('LOADING')}</h2>;
     } else {
-      return <h2 className="no-words">{t('NO_VALS', { vals: t('WORDS') })}</h2>;
+      return <h2 className="no-words">{text('NO_VALS', { vals: text('WORDS') })}</h2>;
     }
   }
   return (
     <div className="container mt-2">
       <div className="d-flex justify-content-between align-items-center">
-        <h2>{t('WORDS')}</h2>
-        <Button href={routes.newWord}>{t('ADD_NEW', { what: '' })}</Button>
+        <h2>{text('WORDS')}</h2>
+        <Button href={routes.newWord}>{text('ADD_NEW', { what: '' })}</Button>
       </div>
       <Button
         className="button"
@@ -255,13 +228,12 @@ const ViewDictionary = () => {
       </Button>
       <Form
         className="d-flex align-items-center w-100"
-        onSubmit={handleSearch}
       >
         <Form.Group
           controlId="formBasicSearch"
           className="w-100"
         >
-          <Form.Label>{t('SEARCH')}</Form.Label>
+          <Form.Label>{text('SEARCH')}</Form.Label>
           <Form.Control
             type="text"
             placeholder="Enter search term"
@@ -271,25 +243,26 @@ const ViewDictionary = () => {
         </Form.Group>
 
         <div className="d-flex align-items-center">
-          <Form.Group controlId="filter" onChange={(e: any) => setFilter(e.target.value ?? '')} defaultValue={filter}>
-            <Form.Label>{t('FILTER')}</Form.Label>
+          <Form.Group controlId="filter" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilter(e.target.value ?? '')} defaultValue={filter}>
+            <Form.Label>{text('FILTER')}</Form.Label>
             <Form.Select>
-              <option key="all" value="all">{t('SHOW_ALL')}</option>
-              <option key="cbyme" value="created_by_me">{t('CREATED_BY_ME')}</option>
-              <option key="amwon" value="am_working_on">{t('AM_WORKING_ON')}</option>
-              <option key="lupme" value="updated_by_me">{t('LAST_UPDATED_BY_ME')}</option>
-              <option key="synant" value="syn_or_ant">{t('SYN_OR_ANT')}</option>
+              <option key="all" value="all">{text('SHOW_ALL')}</option>
+              <option key="cbyme" value="created_by_me">{text('CREATED_BY_ME')}</option>
+              <option key="amwon" value="am_working_on">{text('AM_WORKING_ON')}</option>
+              <option key="lupme" value="updated_by_me">{text('LAST_UPDATED_BY_ME')}</option>
+              <option key="synant" value="syn_or_ant">{text('SYN_OR_ANT')}</option>
+              <option key="notsynant" value="not_syn_or_ant">{text('NOT_SYN_OR_ANT')}</option>
             </Form.Select>
           </Form.Group>
 
-          <Form.Group controlId="status" onChange={(e: any) => setStatus(e.target.value ?? '')}>
-            <Form.Label>{t('STATUS')}</Form.Label>
+          <Form.Group controlId="status" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value ?? '')}>
+            <Form.Label>{text('STATUS')}</Form.Label>
             <Form.Select defaultValue={status}>
-              <option key="all" value="all">{t('SHOW_ALL')}</option>
-              {statusList.length > 0 && statusList.map((ele) => {
-                const val = splitAndCapitalize(ele);
+              <option key="all" value="all">{text('SHOW_ALL')}</option>
+              {astatus.length > 0 && astatus.map((statusValue) => {
+                const capitalizedStatus = splitAndCapitalize(statusValue);
                 return (
-                  <option key={ele} value={ele}>{val}</option>
+                  <option key={statusValue} value={statusValue}>{capitalizedStatus}</option>
                 );
               })}
             </Form.Select>

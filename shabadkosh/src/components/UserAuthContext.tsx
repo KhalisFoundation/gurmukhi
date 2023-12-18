@@ -32,7 +32,7 @@ const userAuthContext = createContext<any>(null);
 
 export const UserAuthContextProvider = ({ children }: { children:ReactElement }) => {
   const [user, setUser] = useState({});
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
 
   const logIn = (
     email: string,
@@ -52,9 +52,9 @@ export const UserAuthContextProvider = ({ children }: { children:ReactElement })
               email,
               displayName: displayName ?? email?.split('@')[0],
               created_at: Timestamp.now(),
-              created_by: t('SELF'),
+              created_by: text('SELF'),
               updated_at: Timestamp.now(),
-              updated_by: t('SELF'),
+              updated_by: text('SELF'),
             }).then(() => true);
           } else {
             return true;
@@ -74,34 +74,35 @@ export const UserAuthContextProvider = ({ children }: { children:ReactElement })
     role: string,
     email: string,
     password: string,
-  ) => createUserWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
+  ) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userData = userCredential.user;
       const { uid, displayName } = userData;
       const localUser = doc(firestore, `users/${uid}`);
-      setDoc(localUser, {
+      await setDoc(localUser, {
         name,
         role,
         email,
         displayName: displayName ?? name,
         created_at: Timestamp.now(),
-        created_by: t('SELF'),
+        created_by: text('SELF'),
         updated_at: Timestamp.now(),
-        updated_by: t('SELF'),
+        updated_by: text('SELF'),
       });
       setUser(userData);
 
       sendEmailVerification(auth.currentUser ?? userData).then(() => {
-        alert(t('EMAIL_VERIFICATION_SENT'));
+        alert(text('EMAIL_VERIFICATION_SENT'));
       });
       return true;
-    })
-    .catch((error: any) => {
+    } catch (error: any) {
       if (Object.keys(errors).includes(error.code)) {
         alert(errors[error.code]);
       }
       return false;
-    });
+    }
+  };
 
   const logOut = () => signOut(auth);
 

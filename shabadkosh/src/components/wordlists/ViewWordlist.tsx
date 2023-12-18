@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from 'react';
 import {
-  Card, Breadcrumb, ButtonGroup, Button, NavLink, Badge,
+  Card, Breadcrumb, ButtonGroup, Button, NavLink, Badge, Alert,
 } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getDoc, doc } from 'firebase/firestore';
@@ -16,18 +16,19 @@ import {
   convertTimestampToDateString,
 } from '../util';
 import { useUserAuth } from '../UserAuthContext';
+import { NewWordlistType } from '../../types';
 
 const ViewWordlist = () => {
   const { wlid } = useParams();
   const { user } = useUserAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
   const getWordlist = doc(firestore, `wordlists/${wlid}`);
 
-  const [wordlist, setWordlist] = useState<any>({
-  });
+  const [wordlist, setWordlist] = useState<NewWordlistType>({});
   const [found, setFound] = useState<boolean>(true);
   const [words, setWords] = useState<MiniWord[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -40,14 +41,15 @@ const ViewWordlist = () => {
           created_at: docSnap.data().created_at,
           updated_at: docSnap.data().updated_at,
           created_by: docSnap.data().created_by,
+          updated_by: docSnap.data().updated_by,
           words: docSnap.data().words ?? [],
           ...docSnap.data(),
         };
         setWordlist(newWordObj);
         const data = await getWordsByIdList(newWordObj.words);
-        const listOfWords = data?.map((ele) => ({
-          id: ele.id,
-          word: ele.data().word,
+        const listOfWords = data?.map((word) => ({
+          id: word.id,
+          word: word.data().word,
         } as MiniWord));
         setWords(listOfWords ?? []);
         setIsLoading(false);
@@ -59,30 +61,30 @@ const ViewWordlist = () => {
     fetchWordlist();
   }, []);
 
-  const wordsData = words?.map((ele) => (
-    <li key={ele.id} className="row">
+  const wordsData = words?.map((word) => (
+    <li key={word.id} className="row">
       <NavLink
         className="col-4 text-center border rounded-pill m-1"
-        href={routes.word.replace(':wordid', ele.id ?? '')}
-        key={ele.id}
+        href={routes.word.replace(':wordid', word.id ?? '')}
+        key={word.id}
       >
-        {ele.word}
+        {word.word}
       </NavLink>
     </li>
   ));
 
-  const editUrl = routes.editWordlist.replace(':wlid', wordlist.id);
-  const delWordlist = (remWordlist: any) => {
-    const response = window.confirm(`Are you sure you want to delete this wordlist: ${remWordlist.name}? \n This action is not reversible.`);
+  const editUrl = routes.editWordlist.replace(':wlid', wordlist.id ?? '');
+  const delWordlist = (remWordlist: NewWordlistType) => {
+    const response = window.confirm(text('DELETE_CONFIRM', { what: remWordlist.name }));
     if (response) {
       setIsLoading(true);
       const wordlistDoc = doc(firestore, `wordlists/${remWordlist.id}`);
       deleteWordlist(wordlistDoc).then(() => {
         setIsLoading(false);
-        alert('Wordlist deleted!');
+        alert(text('DELETE_USER', { what: 'Wordlist' }));
         navigate(routes.wordlists);
       }).catch((error) => {
-        console.log('error while deleting wordlist', error);
+        setErrorMessage(error.message);
       });
     }
   };
@@ -90,29 +92,30 @@ const ViewWordlist = () => {
   if (isLoading) {
     return (
       <h2>
-        {t('LOADING')}
+        {text('LOADING')}
       </h2>
     );
   }
   if (!found) {
-    return <h2>{t('NOT_FOUND', { what: t('WORD') })}</h2>;
+    return <h2>{text('NOT_FOUND', { what: text('WORD') })}</h2>;
   }
   return (
     <div className="container">
       <Card className="details p-5">
         <Breadcrumb>
-          <Breadcrumb.Item href={routes.home}>{t('HOME')}</Breadcrumb.Item>
-          <Breadcrumb.Item href={routes.wordlists}>{t('WORDLISTS')}</Breadcrumb.Item>
+          <Breadcrumb.Item href={routes.home}>{text('HOME')}</Breadcrumb.Item>
+          <Breadcrumb.Item href={routes.wordlists}>{text('WORDLISTS')}</Breadcrumb.Item>
           <Breadcrumb.Item active>{wordlist.name}</Breadcrumb.Item>
         </Breadcrumb>
+        {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
         {Object.keys(wordlist) && Object.keys(wordlist).length && (
           <div className="d-flex flex-column justify-content-evenly">
             <span>
               <div className="d-flex justify-content-between">
                 <h2>{wordlist.name}</h2>
                 <ButtonGroup className="d-flex align-self-end">
-                  <Button href={editUrl}>{t('EDIT')}</Button>
-                  {user?.role === roles.admin ? <Button onClick={() => delWordlist(wordlist)} variant="danger">{t('DELETE')}</Button> : null}
+                  <Button href={editUrl}>{text('EDIT')}</Button>
+                  {user?.role === roles.admin ? <Button onClick={() => delWordlist(wordlist)} variant="danger">{text('DELETE')}</Button> : null}
                 </ButtonGroup>
               </div>
               <Badge
@@ -127,7 +130,7 @@ const ViewWordlist = () => {
                 bold: <b />,
               }}
               >
-                {t('WORDS_COUNT', { count: words.length })}
+                {text('WORDS_COUNT', { count: words.length })}
               </Trans>
             </h5>
             <ul>
@@ -135,47 +138,47 @@ const ViewWordlist = () => {
             </ul>
             <div className="d-flex flex-column justify-content-evenly">
               <span>
-                <h5><b>{t('METADATA')}</b></h5>
+                <h5><b>{text('METADATA')}</b></h5>
                 <h6>
-                  {t('LABEL_VAL', { label: t('CURRICULUM'), val: wordlist.metadata?.curriculum })}
+                  {text('LABEL_VAL', { label: text('CURRICULUM'), val: wordlist.metadata?.curriculum })}
                 </h6>
                 <h6>
-                  {t('LABEL_VAL', { label: t('LEVEL'), val: wordlist.metadata?.level })}
+                  {text('LABEL_VAL', { label: text('LEVEL'), val: wordlist.metadata?.level })}
                 </h6>
                 <h6>
-                  {t('LABEL_VAL', { label: t('SUBGROUP'), val: wordlist.metadata?.subgroup })}
+                  {text('LABEL_VAL', { label: text('SUBGROUP'), val: wordlist.metadata?.subgroup })}
                 </h6>
               </span>
 
               <p className="mt-3" hidden={!wordlist.notes}>
-                {t('LABEL_VAL', { label: t('NOTES'), val: wordlist.notes })}
+                {text('LABEL_VAL', { label: text('NOTES'), val: wordlist.notes })}
               </p>
 
               <br />
-              <h5><b>{t('INFO')}</b></h5>
+              <h5><b>{text('INFO')}</b></h5>
               <div className="d-flex justify-content-between flex-column">
                 <h6>
-                  {t('LABEL_VAL', {
-                    label: t('CREATED_BY'),
+                  {text('LABEL_VAL', {
+                    label: text('CREATED_BY'),
                     val: wordlist.created_by ? wordlist.created_by : 'Unknown',
                   })}
                 </h6>
                 <h6>
-                  {t('LABEL_VAL', {
-                    label: t('CREATED_AT'),
-                    val: convertTimestampToDateString(wordlist.created_at, t),
+                  {text('LABEL_VAL', {
+                    label: text('CREATED_AT'),
+                    val: convertTimestampToDateString(wordlist.created_at ?? null, text),
                   })}
                 </h6>
                 <h6>
-                  {t('LABEL_VAL', {
-                    label: t('LAST_UPDATED_BY'),
+                  {text('LABEL_VAL', {
+                    label: text('LAST_UPDATED_BY'),
                     val: wordlist.updated_by ? wordlist.updated_by : 'Unknown',
                   })}
                 </h6>
                 <h6>
-                  {t('LABEL_VAL', {
-                    label: t('LAST_UPDATED_AT'),
-                    val: convertTimestampToDateString(wordlist.updated_at, t),
+                  {text('LABEL_VAL', {
+                    label: text('LAST_UPDATED_AT'),
+                    val: convertTimestampToDateString(wordlist.updated_at ?? null, text),
                   })}
                 </h6>
               </div>

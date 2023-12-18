@@ -1,9 +1,11 @@
 import { MiniWord } from './word';
 
 export interface Option {
-  id?: string,
+  id?: string;
+  value?: string;
   option?: string;
   translation?: string;
+  word?: string;
 }
 
 export interface QuestionData {

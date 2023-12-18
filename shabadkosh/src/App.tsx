@@ -47,9 +47,9 @@ i18n.use(initReactI18next).init({
 });
 
 export const App = () => {
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
   return (
-    <Suspense fallback={<h2>{t('LOADING')}</h2>}>
+    <Suspense fallback={<h2>{text('LOADING')}</h2>}>
       <div className="App">
         <UserAuthContextProvider>
           <div>

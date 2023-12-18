@@ -23,52 +23,38 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { firestore } from '../../firebase';
 import {
-  deleteQuestionByWordId,
-  deleteSentenceByWordId,
-  deleteWord, getWordlistsByWordId,
-  getWordsByIdList, questionsCollection,
-  removeWordFromSupport,
-  removeWordFromWordlists,
+  getWordlistsByWordId,
+  getWordsByIdList,
+  questionsCollection,
   reviewWord,
   sentencesCollection,
   wordsCollection,
 } from '../util/controller';
 import {
-  NewWordType, NewSentenceType, WordlistType, MiniWord, Option, QuestionType,
+  NewWordType, SentenceType, WordlistType, MiniWord, Option, QuestionType, WordType,
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
-  astatus, rstatus, cstatus, STATUS, reviewStatus,
+  astatus, rstatus, cstatus, STATUS, EmptyWord, unreviewableStatus,
 } from '../constants';
-import { convertTimestampToDateString } from '../util/utils';
+import { capitalize, convertTimestampToDateString } from '../util/utils';
 import roles from '../constants/roles';
 import errors from '../constants/error';
 import routes from '../constants/routes';
+import { removeWord } from '../util/words';
 
 const WordDetail = () => {
   const { wordid } = useParams();
   const { user } = useUserAuth();
-  const { t } = useTranslation();
+  const { t: text } = useTranslation();
   const navigate = useNavigate();
   // fetch a single word from the database
   const getWord = doc(firestore, `words/${wordid}`);
 
   const [found, setFound] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [word, setWord] = useState<NewWordType>({
-    id: '',
-    created_at: {
-      seconds: 0,
-      nanoseconds: 0,
-    },
-    updated_at: {
-      seconds: 0,
-      nanoseconds: 0,
-    },
-    created_by: '',
-    updated_by: '',
-  });
-  const [sentences, setSentences] = useState<NewSentenceType[]>([]);
+  const [word, setWord] = useState<WordType>(EmptyWord);
+  const [sentences, setSentences] = useState<SentenceType[]>([]);
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [wordlists, setWordlists] = useState<WordlistType[]>([]);
 
@@ -82,8 +68,8 @@ const WordDetail = () => {
   }
 
   useEffect(() => {
-    let synList = [] as any[];
-    let antList = [] as any[];
+    let synonymsList = [] as string[] | MiniWord[];
+    let antonymsList = [] as string[] | MiniWord[];
     let localWords = [] as NewWordType[];
 
     const fetchWords = async () => {
@@ -119,20 +105,18 @@ const WordDetail = () => {
           updated_by: docSnap.data().updated_by,
           ...docSnap.data(),
         };
-        synList = newWordObj.synonyms;
-        antList = newWordObj.antonyms;
+        synonymsList = newWordObj.synonyms;
+        antonymsList = newWordObj.antonyms;
         setWord(newWordObj);
         let listOfWordlists = [] as WordlistType[];
-        await getWordlistsByWordId(wordid ?? '').then((data) => {
-          if (data && data !== undefined) {
-            listOfWordlists = data.map((ele) => ({
-              id: ele.id,
-              ...ele.data(),
-            } as WordlistType));
-          }
-        }).finally(() => {
-          setIsLoading(false);
-        });
+        const wordlistData = await getWordlistsByWordId(wordid ?? '');
+        if (wordlistData && wordlistData !== undefined) {
+          listOfWordlists = wordlistData.map((wordlist) => ({
+            id: wordlist.id,
+            ...wordlist.data(),
+          } as WordlistType));
+        }
+        setIsLoading(false);
         setWordlists(listOfWordlists);
       } else {
         setFound(false);
@@ -140,42 +124,46 @@ const WordDetail = () => {
       }
     };
 
-    const fetchSynonyms = async () => {
+    const fetchWordsList = async (unfoundWords: string[] | MiniWord[]) => {
+      if (!unfoundWords || unfoundWords.length === 0) {
+        return [];
+      }
       setIsLoading(true);
-      await getWordsByIdList(synList).then((docs) => {
-        if (docs && docs !== undefined) {
-          synList = docs.map((d) => ({
-            id: d.id, ...d.data(),
-          } as MiniWord)) as MiniWord[];
+      const foundWords = [] as MiniWord[];
+      const unfoundIdList = [] as string[];
+      unfoundWords.map((unfoundWord) => {
+        if (typeof unfoundWord === 'string') {
+          unfoundIdList.push(unfoundWord);
+        } else {
+          if (unfoundWord.word && unfoundWord.translation) {
+            foundWords.push(unfoundWord as MiniWord);
+          }
         }
-      }).finally(() => {
-        setIsLoading(false);
       });
-    };
-
-    const fetchAntonyms = async () => {
-      setIsLoading(true);
-      await getWordsByIdList(antList).then((docs) => {
-        if (docs && docs !== undefined) {
-          antList = docs.map((d) => ({
-            id: d.id, ...d.data(),
-          } as MiniWord)) as MiniWord[];
-        }
-      }).finally(() => {
+      const wordsData = await getWordsByIdList(unfoundIdList as string[]).then((words) => {
         setIsLoading(false);
+        return words;
       });
+      if (wordsData && wordsData !== undefined) {
+        foundWords.push(...wordsData.map((wordData) => ({
+          id: wordData.id,
+          word: wordData.data().word,
+          translation: wordData.data().translation,
+        } as MiniWord)));
+      }
+      return foundWords;
     };
 
     const fetchSentence = async () => {
       setIsLoading(true);
-      const q = query(sentencesCollection, where('word_id', '==', wordid));
-      const querySnapshot = await getDocs(q).finally(() => {
+      const queryStatement = query(sentencesCollection, where('word_id', '==', wordid));
+      const querySnapshot = await getDocs(queryStatement).finally(() => {
         setIsLoading(false);
       });
       if (!querySnapshot.empty) {
-        const newSentences = querySnapshot.docs.map((docu) => ({
-          id: docu.id,
-          ...docu.data(),
+        const newSentences = querySnapshot.docs.map((sentence) => ({
+          id: sentence.id,
+          ...sentence.data(),
         }));
         setSentences(newSentences);
       }
@@ -183,29 +171,31 @@ const WordDetail = () => {
 
     const fetchQuestions = async () => {
       setIsLoading(true);
-      const q = query(questionsCollection, where('word_id', '==', wordid));
-      const querySnapshot = await getDocs(q).finally(() => {
+      const queryStatement = query(questionsCollection, where('word_id', '==', wordid));
+      const querySnapshot = await getDocs(queryStatement).finally(() => {
         setIsLoading(false);
       });
       if (!querySnapshot.empty) {
-        const newQuestions = querySnapshot.docs.map((docu) => {
-          const lOptions = docu.data().options.map((ele: string | Option) => {
-            if (typeof ele === 'string') {
-              const d = localWords.find((e) => e.id === ele || e.word === ele);
+        const newQuestions = querySnapshot.docs.map((question) => {
+          const optionList = question.data().options.map((option: string | Option) => {
+            if (typeof option === 'string') {
+              const words = localWords.find((localWord) => localWord.id === option || localWord.word === option);
               return {
-                id: d?.id, option: d?.word, translation: d?.translation,
+                id: words?.id,
+                option: words?.word,
+                translation: words?.translation,
               } as Option;
             }
-            return ele;
-          }).filter((ele: any) => ele !== undefined) as Option[];
+            return option;
+          }).filter((option: Option) => option !== undefined) as Option[];
           return {
-            ...docu.data(),
-            id: docu.id,
-            question: docu.data().question,
-            translation: docu.data().translation ?? '',
-            type: docu.data().type,
-            options: lOptions,
-            answer: docu.data().answer,
+            ...question.data(),
+            id: question.id,
+            question: question.data().question,
+            translation: question.data().translation ?? '',
+            type: question.data().type,
+            options: optionList,
+            answer: question.data().answer,
           };
         });
         setQuestions(newQuestions);
@@ -214,10 +204,10 @@ const WordDetail = () => {
 
     fetchWords().then(() => {
       fetchWord().then(() => {
-        fetchSynonyms().then(() => {
-          fetchAntonyms().then(() => {
+        fetchWordsList(synonymsList).then((synonyms) => {
+          fetchWordsList(antonymsList).then((antonyms) => {
             setWord((prev) => ({
-              ...prev, synonyms: synList, antonyms: antList,
+              ...prev, synonyms: synonyms as MiniWord[], antonyms: antonyms as MiniWord[],
             }));
             fetchSentence();
             fetchQuestions();
@@ -228,26 +218,7 @@ const WordDetail = () => {
   }, []);
 
   const editUrl = routes.editWord.replace(':wordid', wordid ?? '');
-  const delWord = (deleted_word: any) => {
-    const response = window.confirm(`Are you sure you want to delete this word: ${deleted_word.word}?\nThis action will delete all sentences and questions for this word as well. \n This action is not reversible!`);
-    if (response) {
-      const getDelWord = doc(firestore, `words/${deleted_word.id}`);
-      setIsLoading(true);
-      removeWordFromSupport(deleted_word.id).then(() => {
-        removeWordFromWordlists(deleted_word.id).then(() => {
-          deleteWord(getDelWord).then(() => {
-            deleteSentenceByWordId(deleted_word.id).then(() => {
-              deleteQuestionByWordId(deleted_word.id).then(() => {
-                alert('Word deleted!');
-                setIsLoading(false);
-                navigate(routes.words);
-              });
-            });
-          });
-        });
-      });
-    }
-  };
+
   const revWord = (word_in_review: NewWordType, type: string) => {
     let action = '';
     if (type === 'review') {
@@ -255,7 +226,7 @@ const WordDetail = () => {
     } else if (type === 'approve') {
       action = 'approve this word';
     }
-    const response = window.confirm(`Are you sure you want to ${action} : ${word_in_review.word}?`);
+    const response = window.confirm(text('CONFIRM', { action: action, what: word_in_review.word }));
     if (response) {
       try {
 
@@ -293,23 +264,23 @@ const WordDetail = () => {
     }
   };
 
-  const onError = (e: any) => {
-    e.target.parentElement.style.display = 'none';
+  const onError = (event: any) => {
+    event.target.parentElement.style.display = 'none';
   };
 
-  const wordlistData = wordlists?.map((ele: any) => (
-    <li key={ele.id} className="row">
+  const wordlistData = wordlists?.map((wordlist: WordlistType) => (
+    <li key={wordlist.id} className="row">
       <NavLink
         className="col-4 text-center border rounded-pill m-1"
-        href={routes.wordlist.replace(':wlid', ele.id)}
-        key={ele.id}
+        href={routes.wordlist.replace(':wlid', wordlist.id ?? '')}
+        key={wordlist.id}
       >
-        {ele.name}
+        {wordlist.name}
       </NavLink>
     </li>
   ));
 
-  const supportList = (supportWord: any) => (supportWord && supportWord.length ? (
+  const supportList = (supportWord: MiniWord[]) => (supportWord && supportWord.length ? (
     <span className="d-inline-flex">
       {(supportWord as MiniWord[]).map((synonym) => (
         <NavLink
@@ -321,35 +292,35 @@ const WordDetail = () => {
         </NavLink>
       ))}
     </span>
-  ) : t('NO_TEXT', { for: t('SYNONYMS') }));
+  ) : text('NO_TEXT', { for: text('SYNONYMS') }));
 
   if (isLoading) {
-    return <h2>{t('LOADING')}</h2>;
+    return <h2>{text('LOADING')}</h2>;
   }
   if (!found) {
-    return <h2>{t('NOT_FOUND', { what: t('WORD') })}</h2>;
+    return <h2>{text('NOT_FOUND', { what: text('WORD') })}</h2>;
   }
   return (
     <Card className="container p-5">
       <Breadcrumb>
-        <Breadcrumb.Item href={routes.home}>{t('HOME')}</Breadcrumb.Item>
-        <Breadcrumb.Item href={routes.words}>{t('WORDS')}</Breadcrumb.Item>
+        <Breadcrumb.Item href={routes.home}>{text('HOME')}</Breadcrumb.Item>
+        <Breadcrumb.Item href={routes.words}>{text('WORDS')}</Breadcrumb.Item>
         <Breadcrumb.Item active>{word.word}</Breadcrumb.Item>
       </Breadcrumb>
-      <h2>{t('WORD_DETAIL')}</h2>
+      <h2>{text('WORD_DETAIL')}</h2>
 
       <br />
       <span>
         <div className="d-flex justify-content-between">
           <h3>
-            {t('WORD_WITH_TRANSLATION', { word: word.word, translation: word.translation })}
+            {text('WORD_WITH_TRANSLATION', { word: word.word, translation: word.translation })}
           </h3>
 
           <ButtonGroup className="d-flex align-self-end">
-            {((word.status && statusList.includes(word.status ?? STATUS.CREATING_ENGLISH)) || word.is_for_support) ? <Button href={editUrl}>{t('EDIT')}</Button> : null}
-            {(word.status && !reviewStatus.includes(word.status)) ? <Button onClick={() => revWord(word, 'review')} variant="success">{t('SEND_TO_REVIEW')}</Button> : null}
-            {(word.status && [roles.reviewer, roles.admin].includes(user.role) && [STATUS.REVIEW_ENGLISH, STATUS.REVIEW_FINAL].includes(word.status)) ? <Button onClick={() => revWord(word, 'approve')} variant="success">{t('APPROVE')}</Button> : null}
-            {user.role === roles.admin ? <Button onClick={() => delWord(word)} variant="danger">{t('DELETE')}</Button> : null}
+            {((word.status && statusList.includes(word.status ?? STATUS.CREATING_ENGLISH)) || word.is_for_support) ? <Button href={editUrl}>{text('EDIT')}</Button> : null}
+            {(word.status && !unreviewableStatus.includes(word.status)) ? <Button onClick={() => revWord(word, 'review')} variant="success">{text('SEND_TO_REVIEW')}</Button> : null}
+            {(word.status && [roles.reviewer, roles.admin].includes(user.role) && [STATUS.REVIEW_ENGLISH, STATUS.REVIEW_FINAL].includes(word.status)) ? <Button onClick={() => revWord(word, 'approve')} variant="success">{text('APPROVE')}</Button> : null}
+            {user.role === roles.admin ? <Button onClick={() => removeWord(word, setIsLoading, navigate, text)} variant="danger">{text('DELETE')}</Button> : null}
           </ButtonGroup>
         </div>
 
@@ -357,7 +328,7 @@ const WordDetail = () => {
           {word.status}
         </Badge>
         <Badge bg="primary">
-          {word.is_for_support ? t('SYN_OR_ANT') : null}
+          {word.is_for_support ? text('SYN_OR_ANT') : null}
         </Badge>
       </span>
 
@@ -378,43 +349,43 @@ const WordDetail = () => {
           ) : null}
           <br />
           {word.is_for_support
-            ? <h6>{t('supportWordDesc')}</h6>
+            ? <h6>{text('SUPPORT_WORD_DESC')}</h6>
             : null}
           <h4>
-            {t('LABEL_VAL', {
+            {text('LABEL_VAL', {
               label: 'ਅਰਥ',
               val: word.meaning_punjabi ? word.meaning_punjabi : '~',
             })}
           </h4>
           <h4>
-            {t('LABEL_VAL', {
+            {text('LABEL_VAL', {
               label: 'Meaning',
               val: word.meaning_english ? word.meaning_english : '~',
             })}
           </h4>
           {word.part_of_speech && (
             <h4>
-              {t('LABEL_VAL', {
-                label: t('PART_OF_SPEECH'),
+              {text('LABEL_VAL', {
+                label: text('PART_OF_SPEECH'),
                 val: word.part_of_speech,
               })}
             </h4>
           )}
 
           <br />
-          <h5><b>{t('SYNONYMS')}</b></h5>
+          <h5><b>{text('SYNONYMS')}</b></h5>
           <div className="d-flex">
-            {supportList(word.synonyms)}
+            {supportList(word.synonyms as MiniWord[])}
           </div>
 
           <br />
-          <h5><b>{t('ANTONYMS')}</b></h5>
+          <h5><b>{text('ANTONYMS')}</b></h5>
           <div className="d-flex">
-            {supportList(word.antonyms)}
+            {supportList(word.antonyms as MiniWord[])}
           </div>
 
           <br />
-          <h5><b>{t('SENTENCES')}</b></h5>
+          <h5><b>{capitalize(text('SENTENCES'))}</b></h5>
           <ListGroup>
             {sentences && sentences.length ? (
               sentences.map((sentence) => (
@@ -423,50 +394,50 @@ const WordDetail = () => {
                   <h6>{sentence.translation}</h6>
                 </ListGroup.Item>
               ))
-            ) : t('NO_TEXT', { for: t('SENTENCES') })}
+            ) : text('NO_TEXT', { for: capitalize(text('SENTENCES')) })}
           </ListGroup>
 
           <br />
-          <h5><b>{t('QUESTIONS')}</b></h5>
+          <h5><b>{capitalize(text('QUESTIONS'))}</b></h5>
           <ListGroup>
             {questions && questions.length ? (
               questions.map((question, qid) => (
                 <ListGroup.Item key={question.id}>
                   <h5>
-                    {t('LABEL_VAL', {
-                      label: t('QUESTION'),
+                    {text('LABEL_VAL', {
+                      label: text('QUESTION'),
                       val: question.question,
                     })}
                   </h5>
                   <h5>
-                    {t('LABEL_VAL', {
-                      label: t('TRANSLATION'),
+                    {text('LABEL_VAL', {
+                      label: text('TRANSLATION'),
                       val: question.translation,
                     })}
                   </h5>
                   <h6>
-                    {t('OPTIONS')}
+                    {text('OPTIONS')}
                     :
                     <ul>
-                      {question.options?.map((ele, idx) => <li key={`qoption${qid}${idx}`}>{ele.option}</li>)}
+                      {question.options?.map((option, optionId) => <li key={`qoption${qid}${optionId}`}>{option.option}</li>)}
                     </ul>
                   </h6>
                   <h6>
-                    {t('LABEL_VAL', {
-                      label: t('ANSWER'),
+                    {text('LABEL_VAL', {
+                      label: text('ANSWER'),
                       val: question.options[question.answer]?.option
                         ?? JSON.stringify(question.answer),
                     })}
                   </h6>
                   <h6>
-                    {t('LABEL_VAL', {
-                      label: t('TYPE'),
+                    {text('LABEL_VAL', {
+                      label: text('TYPE'),
                       val: question.type,
                     })}
                   </h6>
                 </ListGroup.Item>
               ))
-            ) : t('NO_TEXT', { for: t('QUESTIONS') })}
+            ) : text('NO_TEXT', { for: capitalize(text('QUESTIONS')) })}
           </ListGroup>
 
           <br />
@@ -474,7 +445,7 @@ const WordDetail = () => {
             && (
               <div>
                 <h5>
-                  {t('WORDLISTS')}
+                  {text('WORDLISTS')}
                 </h5>
                 <ul>
                   {wordlistData}
@@ -483,37 +454,37 @@ const WordDetail = () => {
             )}
 
           <p className="mt-3" hidden={!word.notes}>
-            {t('LABEL_VAL', {
-              label: t('NOTES'),
+            {text('LABEL_VAL', {
+              label: text('NOTES'),
               val: word.notes,
             })}
           </p>
 
           <br />
-          <h5><b>{t('INFO')}</b></h5>
+          <h5><b>{text('INFO')}</b></h5>
           <div className="d-flex justify-content-between flex-column">
             <h6>
-              {t('LABEL_VAL', {
-                label: t('CREATED_BY'),
+              {text('LABEL_VAL', {
+                label: text('CREATED_BY'),
                 val: word.created_by,
               })}
             </h6>
             <h6>
-              {t('LABEL_VAL', {
-                label: t('UPDATED_BY'),
-                val: convertTimestampToDateString(word.created_at, t),
+              {text('LABEL_VAL', {
+                label: text('UPDATED_BY'),
+                val: convertTimestampToDateString(word.created_at, text),
               })}
             </h6>
             <h6>
-              {t('LABEL_VAL', {
-                label: t('LAST_UPDATED_BY'),
+              {text('LABEL_VAL', {
+                label: text('LAST_UPDATED_BY'),
                 val: word.updated_by,
               })}
             </h6>
             <h6>
-              {t('LABEL_VAL', {
-                label: t('LAST_UPDATED_AT'),
-                val: convertTimestampToDateString(word.updated_at, t),
+              {text('LABEL_VAL', {
+                label: text('LAST_UPDATED_AT'),
+                val: convertTimestampToDateString(word.updated_at, text),
               })}
             </h6>
           </div>

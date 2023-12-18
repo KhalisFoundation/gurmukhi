@@ -1,4 +1,4 @@
-export interface NewSentenceType {
+export interface SentenceType {
   id?: string,
   sentence?: string,
   translation?: string,

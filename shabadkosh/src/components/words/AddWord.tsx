@@ -1,36 +1,35 @@
-import React, { useEffect, useState } from 'react';
+/* eslint-disable @typescript-eslint/indent */
+import React, { FormEvent, useEffect, useState } from 'react';
 import {
-  Button, Card, Form,
+  Card, Button, Form, Alert,
 } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import {
-  DocumentData, DocumentReference, QuerySnapshot, Timestamp, onSnapshot,
+  DocumentData, DocumentReference, QuerySnapshot, onSnapshot,
 } from 'firebase/firestore';
 import Multiselect from 'multiselect-react-dropdown';
 import { useTranslation } from 'react-i18next';
-import { NewSentenceType } from '../../types/sentence';
+import { SentenceType } from '../../types/sentence';
 import {
-  QuestionType, WordlistType, MiniWord, Option,
+  QuestionType, MiniWord, Option, MiniWordlist,
 } from '../../types';
 import { useUserAuth } from '../UserAuthContext';
 import {
+  DATATYPES,
   STATUS,
-  astatus, cstatus, qtypes, rstatus,
+  astatus,
+  cstatus2,
+  qtypes,
+  rstatus,
 } from '../constants';
 import {
-  addQuestion,
-  addSentence,
-  addWord,
-  addWordIdToWordlists,
   isWordNew,
-  wordlistsCollection, wordsCollection,
+  wordlistsCollection,
+  wordsCollection,
   capitalize,
-  createSupportWords,
-  seperateIdsAndNewWords,
   setOptionsDataForSubmit,
-  splitAndClear,
   splitAndCapitalize,
-  removeExtraSpaces,
+  hasValidOptions,
 } from '../util';
 import SupportWord from '../util/SupportWord';
 import Options from '../util/Options';
@@ -38,29 +37,40 @@ import regex from '../constants/regex';
 import roles from '../constants/roles';
 import routes from '../constants/routes';
 import PARTS_OF_SPEECH from '../constants/pos';
+import SUBMIT_TYPE from '../constants/submit';
+import {
+  addNewQuestion,
+  addNewSentence,
+  changeQuestion,
+  changeSentence,
+  createWordData,
+  removeData,
+  saveWord,
+} from '../util/words';
 
 const AddWord = () => {
+  const { t: text } = useTranslation();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [formValues, setFormValues] = useState({} as any);
-  const [sentences, setSentences] = useState<NewSentenceType[]>([]);
+  const [sentences, setSentences] = useState<SentenceType[]>([]);
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [words, setWords] = useState<MiniWord[]>([]);
-  const [wordlists, setWordlists] = useState<WordlistType[]>([]);
-  const [selectedWordlists, setSelectedWordlists] = useState<DocumentReference[]>([]);
+  const [wordlists, setWordlists] = useState<MiniWordlist[]>([]);
   const [synonyms, setSynonyms] = useState<MiniWord[]>([]);
   const [antonyms, setAntonyms] = useState<MiniWord[]>([]);
+  const [selectedWordlists, setSelectedWordlists] = useState<DocumentReference[]>([]);
   const [validated, setValidated] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMesssage] = useState('');
   const { user } = useUserAuth();
-  const { t } = useTranslation();
 
-  let status = [] as string[];
+  let statuses = [] as string[];
   if (user.role === roles.admin) {
-    status = astatus;
+    statuses = astatus;
   } else if (user.role === roles.reviewer) {
-    status = rstatus;
+    statuses = rstatus;
   } else if (user.role === roles.creator) {
-    status = cstatus;
+    statuses = cstatus2;
   }
 
   useEffect(() => {
@@ -97,218 +107,31 @@ const AddWord = () => {
     setSelectedWordlists(selectedList);
   };
 
-  const addNewSentence = (e: any) => {
-    e.preventDefault();
-    setSentences((prevSentences) => [
-      ...prevSentences,
-      {
-        word_id: '',
-        sentence: '',
-        translation: '',
-      },
-    ]);
-  };
-
-  const removeSentence = (idx: number, e: any) => {
-    e.preventDefault();
-
-    const newSFormValues = {
-    } as any;
-
-    // update sentences based on id of deleted sentence
-    sentences.forEach((sentence, i) => {
-      const newSentence = {
-        ...sentence,
-        sentence: formValues[`sentence${i}`],
-        translation: formValues[`translation${i}`],
-      };
-      if (i > idx) {
-        newSFormValues[`sentence${i - 1}`] = newSentence.sentence;
-        newSFormValues[`translation${i - 1}`] = newSentence.translation;
-      } else if (i < idx) {
-        newSFormValues[`sentence${i}`] = newSentence.sentence;
-        newSFormValues[`translation${i}`] = newSentence.translation;
-      }
-    });
-
-    // add other fields which are not part of sentences
-    Object.keys(formValues).forEach((key) => {
-      if (!key.match(/sentence\d+/) && !key.match(/translation\d+/)) {
-        newSFormValues[key] = formValues[key];
-      }
-    });
-
-    setFormValues(newSFormValues);
-    setSentences((prevSentences) => {
-      const newSentences = [...prevSentences];
-      newSentences.splice(idx, 1);
-      return newSentences;
-    });
-  };
-
-  const removeAllSentences = (e:any) => {
-    e.preventDefault();
-    setSentences([]);
-    const newSFormValues = {
-    } as any;
-    Object.keys(formValues).forEach((key) => {
-      if (!key.match(/sentence\d+/) && !key.match(/translation\d+/)) {
-        newSFormValues[key] = formValues[key];
-      }
-    });
-    setFormValues(newSFormValues);
-  };
-
-  const changeSentence = (event: any) => {
+  const removeAllData = (event:React.MouseEvent, datatype: string) => {
     event.preventDefault();
-    const updatedSentences = sentences.map((sentence, sidx) => {
-      if (event.target.id.includes('translation')) {
-        if (parseInt(event.target.id.split('translation')[1], 10) !== sidx) {
-          return sentence;
-        }
-        return {
-          ...sentence, translation: event.target.value,
-        };
-      } if (event.target.id.includes('sentence')) {
-        if (parseInt(event.target.id.split('sentence')[1], 10) !== sidx) {
-          return sentence;
-        }
-        return {
-          ...sentence, sentence: event.target.value,
-        };
-      }
-      return sentence;
-    });
-    setSentences(updatedSentences);
+    switch (datatype) {
+    case DATATYPES.SENTENCE:
+      setSentences([]);
+      break;
+    case DATATYPES.QUESTION:
+      setQuestions([]);
+      break;
+    default:
+      break;
+    }
   };
 
-  const addNewQuestion = (e: any) => {
-    e.preventDefault();
-    setQuestions((prevQuestions) => [
-      ...prevQuestions,
-      {
-        question: '',
-        translation: '',
-        type: qtypes.CONTEXT,
-        options: [],
-        answer: 0,
-        word_id: '',
-      },
-    ]);
-  };
-
-  const removeQuestion = (idx: number, e: any) => {
-    e.preventDefault();
-
-    const newSFormValues = {
-    } as any;
-
-    // update questions based on id of deleted question
-    questions.forEach((question, i) => {
-      const newQuestion = {
-        ...question,
-        question: formValues[`question${i}`],
-        translation: formValues[`qtranslation${i}`],
-        type: formValues[`type${i}`],
-        options: formValues[`options${i}`],
-        answer: formValues[`answer${i}`],
-      };
-      if (i > idx) {
-        newSFormValues[`question${i - 1}`] = newQuestion.question;
-        newSFormValues[`qtranslation${i - 1}`] = newQuestion.translation;
-        newSFormValues[`type${i - 1}`] = newQuestion.type;
-        newSFormValues[`options${i - 1}`] = newQuestion.options;
-        newSFormValues[`answer${i - 1}`] = newQuestion.answer;
-      } else if (i < idx) {
-        newSFormValues[`question${i}`] = newQuestion.question;
-        newSFormValues[`qtranslation${i}`] = newQuestion.translation;
-        newSFormValues[`type${i}`] = newQuestion.type;
-        newSFormValues[`options${i}`] = newQuestion.options;
-        newSFormValues[`answer${i}`] = newQuestion.answer;
-      }
-    });
-
-    // add other fields which are not part of questions
-    Object.keys(formValues).forEach((key) => {
-      if (!key.match(/question\d+/) && !key.match(/qtranslation\d+/) && !key.match(/type\d+/) && !key.match(/options\d+/) && !key.match(/answer\d+/)) {
-        newSFormValues[key] = formValues[key];
-      }
-    });
-
-    setFormValues(newSFormValues);
-    setQuestions((prevQuestions) => {
-      const newQuestions = [...prevQuestions];
-      newQuestions.splice(idx, 1);
-      return newQuestions;
-    });
-  };
-
-  const removeAllQuestions = (e:any) => {
-    e.preventDefault();
-    setQuestions([]);
-    const newSFormValues = {
-    } as any;
-    Object.keys(formValues).forEach((key) => {
-      if (!key.match(/question\d+/) && !key.match(/type\d+/) && !key.match(/options\d+/) && !key.match(/answer\d+/)) {
-        newSFormValues[key] = formValues[key];
-      }
-    });
-    setFormValues(newSFormValues);
-  };
-
-  const changeQuestion = (event: any) => {
-    event.preventDefault();
-    const updatedQuestions = questions.map((question, qidx) => {
-      if (event.target.id.includes('question')) {
-        if (parseInt(event.target.id.split('question')[1], 10) !== qidx) {
-          return question;
-        }
+  const changeQOptions = (id: string, optionData: Option[]) => {
+    const updatedQuestions = questions.map((question, questionId) => {
+      switch (id) {
+      case `options${questionId}`:
         return {
-          ...question, question: event.target.value,
+          ...question,
+          options: optionData,
         };
-      } if (event.target.id.includes('qtranslation')) {
-        if (parseInt(event.target.id.split('qtranslation')[1], 10) !== qidx) {
-          return question;
-        }
-        return {
-          ...question, translation: event.target.value,
-        };
-      } if (event.target.id.includes('type')) {
-        if (parseInt(event.target.id.split('type')[1], 10) !== qidx) {
-          return question;
-        }
-        return {
-          ...question, type: event.target.value,
-        };
-      } if (event.target.id.includes('options')) {
-        if (parseInt(event.target.id.split('options')[1], 10) !== qidx) {
-          return question;
-        }
-        return {
-          ...question, options: event.target.value,
-        };
-      } if (event.target.id.includes('answer')) {
-        if (parseInt(event.target.id.split('answer')[1], 10) !== qidx) {
-          return question;
-        }
-        return {
-          ...question, answer: event.target.value,
-        };
-      }
-      return question;
-    });
-    setQuestions(updatedQuestions);
-  };
-
-  const changeQOptions = (id: string, optionData: any) => {
-    // event.preventDefault()
-    const updatedQuestions = questions.map((question, qidx) => {
-      if (parseInt(id.split('options')[1], 10) !== qidx) {
+      default:
         return question;
       }
-      return {
-        ...question, options: optionData,
-      };
     });
     setQuestions(updatedQuestions);
   };
@@ -319,160 +142,75 @@ const AddWord = () => {
     setValidated(false);
   };
 
-  const handleChange = (e: any) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormValues({
-      ...formValues, [e.target.id]: e.target.value,
+      ...formValues, [event.target.id]: event.target.value,
     });
   };
 
-  const handleSupport = (e: any) => {
+  const handleSupport = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormValues({
-      ...formValues, [e.target.id]: e.target.checked,
+      ...formValues, [event.target.id]: event.target.checked,
     });
   };
 
   const addNewWord = async (formData: any) => {
-    const {
-      lSentences, lQuestions, lWordlists, ...form
-    } = formData;
-
-    const wordIsNew = await isWordNew(form.word);
-    if (wordIsNew) {
-      setIsLoading(true);
-      addWord({
-        word: removeExtraSpaces(form.word),
-        translation: removeExtraSpaces(form.translation),
-        meaning_punjabi: removeExtraSpaces(form.meaning_punjabi),
-        meaning_english: removeExtraSpaces(form.meaning_english),
-        part_of_speech: form.part_of_speech,
-        synonyms: form.synonyms,
-        antonyms: form.antonyms,
-        images: splitAndClear(form.images) ?? [],
-        status: form.status ?? STATUS.CREATING_ENGLISH,
-        created_at: Timestamp.now(),
-        updated_at: Timestamp.now(),
-        created_by: user.email,
-        updated_by: user.email,
-        notes: removeExtraSpaces(form.notes),
-        is_for_support: form.is_for_support ?? false,
-      })
-        .then((word_id) => {
-        // use return value of addWord to add sentences
-          lSentences.forEach((sentence: any) => {
-            addSentence({
-              ...sentence,
-              word_id,
-            });
-          });
-
-          lQuestions.forEach((question: any) => {
-            addQuestion({
-              ...question,
-              translation: question.translation ?? '',
-              options: question.options ?? [],
-              type: question.type ?? qtypes.CONTEXT,
-              word_id,
-            });
-          });
-
-          addWordIdToWordlists(lWordlists, word_id);
-        }).finally(() => {
-          setIsLoading(false);
-        });
-
-      resetState();
-      setSubmitted(true);
-    } else {
-      alert('Word already exists!');
+    saveWord(formData, SUBMIT_TYPE.CREATE, user).finally(() => {
       setIsLoading(false);
-    }
+    });
+
+    resetState();
+    setSubmitted(true);
   };
 
-  const sendForReview = (e: any) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsLoading(true);
 
-    const { form } = e.target;
+    const form = event.currentTarget;
     if (form.checkValidity() === false) {
       setValidated(true);
+      setIsLoading(false);
       return;
     }
 
-    const formData = {
-    } as any;
-    Object.keys(formValues).forEach((ele) => {
-      if (!ele.match(/sentence\d+/) && !ele.match(/translation\d+/) && !ele.match(/question\d+/) && !ele.match(/type\d+/) && !ele.match(/options\d+/) && !ele.match(/answer\d+/)) {
-        formData[ele] = formValues[ele];
+    const formData = {} as any;
+    Object.keys(formValues).forEach((formElement) => {
+      if (!formElement.match(/sentence\d+/) && !formElement.match(/translation\d+/) && !formElement.match(/question\d+/) && !formElement.match(/qtranslation\d+/) && !formElement.match(/type\d+/) && !formElement.match(/options\d+/) && !formElement.match(/answer\d+/)) {
+        formData[formElement] = formValues[formElement];
       }
     });
+    formData.translation = formData.translation.toLowerCase();
 
-    formData.lSentences = sentences;
-    formData.lQuestions = setOptionsDataForSubmit(questions);
-
-    const [uniqueSyn, synIds] = seperateIdsAndNewWords(synonyms);
-    const [uniqueAnt, antIds] = seperateIdsAndNewWords(antonyms);
-
-    createSupportWords(uniqueSyn, user).then((synIdlist) => {
-      createSupportWords(uniqueAnt, user).then((antIdList) => {
-        const synArr = synIds.concat(synIdlist);
-        const antArr = antIds.concat(antIdList);
-
-        formData.synonyms = synArr;
-        formData.antonyms = antArr;
-        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
-        formData.status = STATUS.REVIEW_ENGLISH;
-
-        // make list of docRefs from selectedWordlists
-        formData.lWordlists = selectedWordlists.map((docu) => docu.id);
-        addNewWord(formData);
-      });
-    });
-  };
-
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const form = e.currentTarget;
-    if (form.checkValidity() === false) {
-      setValidated(true);
+    if (synonyms.includes(formData.word) || antonyms.includes(formData.word)) {
+      alert(text('WORD_CANNOT_BE_OWN'));
+      setIsLoading(false);
       return;
     }
 
-    const formData = {
-    } as any;
-    Object.keys(formValues).forEach((ele) => {
-      if (!ele.match(/sentence\d+/) && !ele.match(/translation\d+/) && !ele.match(/question\d+/) && !ele.match(/type\d+/) && !ele.match(/options\d+/) && !ele.match(/answer\d+/)) {
-        formData[ele] = formValues[ele];
+    const wordIsNew = await isWordNew(formData.word);
+    if (!wordIsNew) {
+      alert(text('WORD_ALREADY_EXISTS'));
+      setIsLoading(false);
+    } else {
+      const validOptions = hasValidOptions(questions);
+      if (!validOptions) {
+        alert(text('ALERT_QUESTION_OPTIONS'));
+        setIsLoading(false);
+      } else {
+        formData.sentences = sentences;
+        formData.questions = setOptionsDataForSubmit(questions);
+        formData.wordlists = selectedWordlists ? selectedWordlists.map((wordlist) => wordlist.id) : [];
+        const wordData = await createWordData(formData, synonyms, antonyms, user, setErrorMesssage);
+        addNewWord(wordData);
       }
-    });
-
-    formData.lSentences = sentences;
-    formData.lQuestions = setOptionsDataForSubmit(questions);
-
-    const [uniqueSyn, synIds] = seperateIdsAndNewWords(synonyms);
-    const [uniqueAnt, antIds] = seperateIdsAndNewWords(antonyms);
-
-    createSupportWords(uniqueSyn, user).then((synIdlist) => {
-      createSupportWords(uniqueAnt, user).then((antIdList) => {
-        const synArr = synIds.concat(synIdlist);
-        const antArr = antIds.concat(antIdList);
-
-        formData.synonyms = synArr;
-        formData.antonyms = antArr;
-
-        formData.part_of_speech = formData.part_of_speech ?? PARTS_OF_SPEECH.NOUN;
-        formData.status = formData.status ?? STATUS.CREATING_ENGLISH;
-
-        // make list of docRefs from selectedWordlists
-        formData.lWordlists = selectedWordlists.map((docu) => docu.id);
-        addNewWord(formData);
-      });
-    });
+    }
   };
 
   const unsetSubmitted = () => {
     setSubmitted(false);
+    setErrorMesssage('');
     // refresh page
     window.location.reload();
   };
@@ -480,49 +218,49 @@ const AddWord = () => {
   const navigate = useNavigate();
 
   if (isLoading) {
-    return <h2>{t('LOADING')}</h2>;
+    return <h2>{text('LOADING')}</h2>;
   }
   return (
     <div className="d-flex flex-column justify-content-center align-items-center background">
-      <h2>{t('ADD_NEW', { what: t('WORD') })}</h2>
+      <h2>{text('ADD_NEW', { what: text('WORD') })}</h2>
       <Form className="rounded p-4 p-sm-3" hidden={submitted} noValidate validated={validated} onSubmit={handleSubmit}>
         <Form.Group className="mb-3" controlId="word" onChange={handleChange}>
-          <Form.Label>{t('WORD')}</Form.Label>
+          <Form.Label>{text('WORD')}</Form.Label>
           <Form.Control type="text" placeholder="ਸ਼ਬਦ" pattern={regex.gurmukhiWordRegex} required />
           <Form.Control.Feedback type="invalid">
-            {t('FEEDBACK_GURMUKHI', { for: 'a word' })}
+            {text('FEEDBACK_GURMUKHI', { for: 'a word' })}
           </Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="translation" onChange={handleChange}>
-          <Form.Label>{t('TRANSLATION')}</Form.Label>
+          <Form.Label>{text('TRANSLATION')}</Form.Label>
           <Form.Control type="text" placeholder="Enter translation" pattern={regex.translationRegex} required />
           <Form.Control.Feedback type="invalid">
-            {t('FEEDBACK_ENGLISH', { for: 'translation' })}
+            {text('FEEDBACK_ENGLISH', { for: 'translation' })}
           </Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="meaning_punjabi" onChange={handleChange}>
-          <Form.Label>{t('MEANING_PUNJABI')}</Form.Label>
+          <Form.Label>{text('MEANING_PUNJABI')}</Form.Label>
           <Form.Control type="text" placeholder="ਇੱਥੇ ਅਰਥ ਦਰਜ ਕਰੋ" pattern={regex.gurmukhiSentenceRegex} />
           <Form.Control.Feedback type="invalid">
-            {t('FEEDBACK_GURMUKHI', { for: 'meaning' })}
+            {text('FEEDBACK_GURMUKHI', { for: 'meaning' })}
           </Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="meaning_english" onChange={handleChange}>
-          <Form.Label>{t('MEANING_ENGLISH')}</Form.Label>
+          <Form.Label>{text('MEANING_ENGLISH')}</Form.Label>
           <Form.Control type="text" placeholder="Enter meaning" pattern={regex.translationRegex} />
           <Form.Control.Feedback type="invalid">
-            {t('FEEDBACK_ENGLISH', { for: 'meaning' })}
+            {text('FEEDBACK_ENGLISH', { for: 'meaning' })}
           </Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="part_of_speech" onChange={handleChange}>
-          <Form.Label>{t('PART_OF_SPEECH')}</Form.Label>
+          <Form.Label>{text('PART_OF_SPEECH')}</Form.Label>
           <Form.Select aria-label="Choose part of speech" defaultValue={PARTS_OF_SPEECH.NOUN}>
-            {Object.values(PARTS_OF_SPEECH).map((ele) => (
-              <option key={ele} value={ele}>{capitalize(ele)}</option>
+            {Object.values(PARTS_OF_SPEECH).map((status) => (
+              <option key={status} value={status}>{capitalize(status)}</option>
             ))}
           </Form.Select>
         </Form.Group>
@@ -536,12 +274,12 @@ const AddWord = () => {
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="images" onChange={handleChange}>
-          <Form.Label>{t('IMAGES')}</Form.Label>
+          <Form.Label>{text('IMAGES')}</Form.Label>
           <Form.Control type="text" placeholder="imgUrl1, imgUrl2, ..." />
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="words">
-          <Form.Label>{t('CHOOSE_WORDLIST')}</Form.Label>
+          <Form.Label>{text('CHOOSE_WORDLIST')}</Form.Label>
           <Multiselect
             options={wordlists}
             displayValue="name"
@@ -555,114 +293,121 @@ const AddWord = () => {
           <Form.Label
             className="d-flex flex-row align-items-center justify-content-between w-100"
           >
-            <p>{t('SENTENCES')}</p>
+            <p>{capitalize(text('SENTENCES'))}</p>
             <div
               className="d-flex align-items-center"
             >
-              <button type="button" className="btn btn-sm" onClick={addNewSentence}>{t('PLUS')}</button>
-              <button type="button" className="btn btn-sm" onClick={removeAllSentences}>{t('CROSS')}</button>
+              <button type="button" className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{text('PLUS')}</button>
+              <button type="button" className="btn btn-sm" onClick={(e) => removeAllData(e, DATATYPES.SENTENCE)}>{text('CROSS')}</button>
             </div>
           </Form.Label>
-          {sentences && sentences.length ? sentences.map((sentence, idx) => (
-            <div key={idx} className="d-flex flex-column justify-content-between mb-3">
+          {sentences && sentences.length ? sentences.map((sentence, sentenceId) => (
+            <div key={sentenceId} className="d-flex flex-column justify-content-between mb-3">
               <div className="d-flex justify-content-between">
                 <p>
-                  {t('SENTENCE_WITH_NUM', { num: idx + 1 })}
+                  {text('SENTENCE_WITH_NUM', { num: sentenceId + 1 })}
                 </p>
-                <button type="button" className="btn btn-sm" onClick={(e) => removeSentence(idx, e)}>🗑️</button>
+                <button type="button" className="btn btn-sm" onClick={(e) => removeData(sentenceId, e, text, sentences, setSentences, SUBMIT_TYPE.CREATE, DATATYPES.SENTENCE)}>{text('BIN')}</button>
               </div>
-              {t('SENTENCE')}
-              <Form.Control id={`sentence${idx}`} className="m-1" type="text" value={sentence.sentence} placeholder="ਇੱਥੇ ਵਾਕ ਦਰਜ ਕਰੋ" onChange={(e) => changeSentence(e)} pattern={regex.gurmukhiSentenceRegex} />
-              <Form.Control.Feedback type="invalid" itemID={`sentence${idx}`}>
-                {t('FEEDBACK_GURMUKHI', { for: 'sentence' })}
+              {text('SENTENCE')}
+              <Form.Control id={`sentence${sentenceId}`} className="m-1" type="text" value={sentence.sentence} placeholder="ਇੱਥੇ ਵਾਕ ਦਰਜ ਕਰੋ" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.gurmukhiSentenceRegex} />
+              <Form.Control.Feedback type="invalid" itemID={`sentence${sentenceId}`}>
+                {text('FEEDBACK_GURMUKHI', { for: 'sentence' })}
               </Form.Control.Feedback>
 
-              {t('TRANSLATION')}
-              <Form.Control id={`translation${idx}`} className="m-1" type="text" value={sentence.translation} placeholder="Enter translation" onChange={(e) => changeSentence(e)} pattern={regex.translationRegex} required />
-              <Form.Control.Feedback type="invalid" itemID={`translation${idx}`}>
-                {t('FEEDBACK_ENGLISH', { for: 'translation' })}
+              {text('TRANSLATION')}
+              <Form.Control id={`translation${sentenceId}`} className="m-1" type="text" value={sentence.translation} placeholder="Enter translation" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.translationRegex} required />
+              <Form.Control.Feedback type="invalid" itemID={`translation${sentenceId}`}>
+                {text('FEEDBACK_ENGLISH', { for: 'translation' })}
               </Form.Control.Feedback>
             </div>
           )) : null}
+          <Button className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{text('ADD_NEW', { what: text('SENTENCE') })}</Button>
         </Form.Group>
 
         <Form.Group className="mb-3" onChange={handleChange}>
           <Form.Label
             className="d-flex flex-row align-items-center justify-content-between w-100"
           >
-            <p>{t('QUESTIONS')}</p>
+            <p>{capitalize(text('QUESTIONS'))}</p>
             <div
               className="d-flex align-items-center"
             >
-              <button type="button" className="btn btn-sm" onClick={addNewQuestion}>{t('PLUS')}</button>
-              <button type="button" className="btn btn-sm" onClick={removeAllQuestions}>{t('CROSS')}</button>
+              <button type="button" className="btn btn-sm" onClick={(e) => addNewQuestion(e, setQuestions)}>{text('PLUS')}</button>
+              <button type="button" className="btn btn-sm" onClick={(e) => removeAllData(e, DATATYPES.QUESTION)}>{text('CROSS')}</button>
             </div>
           </Form.Label>
-          {questions && questions.length ? questions.map((question, idx) => (
+          {questions && questions.length ? questions.map((question, questionId) => (
             <div
-              key={idx}
+              key={questionId}
               className="d-flex flex-column justify-content-between m-0"
             >
               <div className="d-flex justify-content-between align-items-center">
-                <b>{t('QUESTION_WITH_NUM', { num: idx + 1 })}</b>
-                <button type="button" className="btn btn-sm" onClick={(e) => removeQuestion(idx, e)}>🗑️</button>
+                <b>{text('QUESTION_WITH_NUM', { num: questionId + 1 })}</b>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={(e) => removeData(questionId, e, text, questions, setQuestions, SUBMIT_TYPE.CREATE, DATATYPES.QUESTION)}
+                >
+                  {text('BIN')}
+                </button>
               </div>
               <div>
-                <Form.Label>{t('QUESTION')}</Form.Label>
-                <Form.Control id={`question${idx}`} className="m-1" type="text" value={question.question} placeholder="ਇੱਥੇ ਸਵਾਲ ਦਰਜ ਕਰੋ" onChange={(e) => changeQuestion(e)} pattern={regex.gurmukhiQuestionRegex} required />
-                <Form.Control.Feedback type="invalid" itemID={`question${idx}`}>
-                  {t('FEEDBACK_GURMUKHI', { for: 'question' })}
+                <Form.Label>{text('QUESTION')}</Form.Label>
+                <Form.Control id={`question${questionId}`} className="m-1" type="text" value={question.question} placeholder="ਇੱਥੇ ਸਵਾਲ ਦਰਜ ਕਰੋ" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.gurmukhiQuestionRegex} required />
+                <Form.Control.Feedback type="invalid" itemID={`question${questionId}`}>
+                  {text('FEEDBACK_GURMUKHI', { for: 'question' })}
                 </Form.Control.Feedback>
                 <br />
 
-                <Form.Label>{t('TRANSLATION')}</Form.Label>
-                <Form.Control id={`qtranslation${idx}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e)} pattern={regex.englishQuestionTranslationRegex}  />
-                <Form.Control.Feedback type="invalid" itemID={`qtranslation${idx}`}>
-                  {t('FEEDBACK_ENGLISH', { for: 'translation' })}
+                <Form.Label>{text('TRANSLATION')}</Form.Label>
+                <Form.Control id={`qtranslation${questionId}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.englishQuestionTranslationRegex}  />
+                <Form.Control.Feedback type="invalid" itemID={`qtranslation${questionId}`}>
+                  {text('FEEDBACK_ENGLISH', { for: 'translation' })}
                 </Form.Control.Feedback>
                 <br />
 
-                <Form.Label>{t('TYPE')}</Form.Label>
-                <Form.Select aria-label="Default select example" id={`type${idx}`} value={question.type ?? 'context'} onChange={(e) => changeQuestion(e)}>
-                  {Object.values(qtypes).map((ele) => (
-                    <option key={ele} value={ele}>{ele}</option>
+                <Form.Label>{text('TYPE')}</Form.Label>
+                <Form.Select aria-label="Default select example" id={`type${questionId}`} value={question.type ?? 'context'} onChange={(e) => changeQuestion(e, questions, setQuestions)}>
+                  {Object.values(qtypes).map((questionType) => (
+                    <option key={questionType} value={questionType}>{questionType}</option>
                   ))}
                 </Form.Select>
 
-                <Options id={`options${idx}`} name="Options" word={question.options as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${idx}`) as any)} />
-                <Form.Control.Feedback type="invalid" itemID={`options${idx}`}>
-                  {t('FEEDBACK', { for: 'options' })}
+                <Options id={`options${questionId}`} name="Options" word={question.options as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${questionId}`) as HTMLSelectElement)?.value} />
+                <Form.Control.Feedback type="invalid" itemID={`options${questionId}`}>
+                  {text('FEEDBACK', { for: 'options' })}
                 </Form.Control.Feedback>
 
-                <Form.Label>{t('ANSWER')}</Form.Label>
-                <Form.Select id={`answer${idx}`} value={question.answer} onChange={(e) => changeQuestion(e)} required>
-                  {(question.options as Option[]).map((ele, i) => (
-                    <option key={i} value={i}>{ele.option}</option>
+                <Form.Label>{text('ANSWER')}</Form.Label>
+                <Form.Select id={`answer${questionId}`} value={question.answer} onChange={(e) => changeQuestion(e, questions, setQuestions)} required>
+                  {(question.options as Option[]).map((option, optionId) => (
+                    <option key={optionId} value={optionId}>{option.option}</option>
                   ))}
                 </Form.Select>
-                <Form.Control.Feedback type="invalid" itemID={`answer${idx}`}>
-                  {t('FEEDBACK', { for: 'answer' })}
+                <Form.Control.Feedback type="invalid" itemID={`answer${questionId}`}>
+                  {text('FEEDBACK', { for: 'answer' })}
                 </Form.Control.Feedback>
               </div>
               <hr />
             </div>
           )) : null}
-          <Button className="btn btn-sm" onClick={addNewQuestion}>{t('ADD_NEW', { what: t('QUESTION') })}</Button>
+          <Button className="btn btn-sm" onClick={(e) => addNewQuestion(e, setQuestions)}>{text('ADD_NEW', { what: text('QUESTION') })}</Button>
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="notes" onChange={handleChange}>
-          <Form.Label>{t('NOTES')}</Form.Label>
+          <Form.Label>{text('NOTES')}</Form.Label>
           <Form.Control as="textarea" rows={3} placeholder="Enter notes" />
         </Form.Group>
 
         <div className="d-flex justify-content-between align-items-center">
           <Form.Group className="mb-3" controlId="status" onChange={handleChange}>
-            <Form.Label>{t('STATUS')}</Form.Label>
+            <Form.Label>{text('STATUS')}</Form.Label>
             <Form.Select aria-label="Default select example" defaultValue={STATUS.CREATING_ENGLISH}>
-              {status.map((ele) => {
-                const value = splitAndCapitalize(ele);
+              {statuses.map((status) => {
+                const value = splitAndCapitalize(status);
                 return (
-                  <option key={ele + value.toString()} value={ele}>{value}</option>
+                  <option key={status + value.toString()} value={status}>{value}</option>
                 );
               })}
             </Form.Select>
@@ -678,19 +423,19 @@ const AddWord = () => {
 
         <div className="d-flex justify-content-around">
           <Button variant="primary" type="submit">
-            {t('SUBMIT')}
-          </Button>
-          <Button variant="primary" type="button" onClick={(e) => sendForReview(e)}>
-            {t('SEND_FOR_REVIEW')}
+            {text('SUBMIT')}
           </Button>
         </div>
       </Form>
+      {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
       {submitted ? (
         <Card className="d-flex justify-content-center align-items-center background">
           <Card.Body className="rounded p-4 p-sm-3">
-            <h3>{t('SUCCESS_ADD_NEW', { for: 'word' })}</h3>
-            <Button variant="primary" onClick={unsetSubmitted}>{t('ADD_ANOTHER', { what: t('WORD') })}</Button>
-            <Button variant="primary" onClick={() => navigate(routes.words)}>{t('BACK_TO', { page: 'words' })}</Button>
+            <h3>{text('SUCCESS_ADD_NEW', { for: 'word' })}</h3>
+            <div className="d-flex justify-content-around">
+              <Button variant="primary" onClick={unsetSubmitted}>{text('ADD_ANOTHER', { what: text('WORD') })}</Button>
+              <Button variant="primary" onClick={() => navigate(routes.words)}>{text('BACK_TO', { page: 'words' })}</Button>
+            </div>
           </Card.Body>
         </Card>
       ) : null}
