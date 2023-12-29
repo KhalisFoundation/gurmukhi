@@ -68,6 +68,10 @@ form button, form h5 {
   white-space: normal !important;
 }
 
+.red {
+  color: red;
+}
+
 /* style for form on small devices */
 @media only screen and (max-width: 600px) {
   form {

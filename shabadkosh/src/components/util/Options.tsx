@@ -94,7 +94,7 @@ const Options = ({
         className="btn btn-sm"
         onClick={(event) => onViewToggle(event)}
       >
-        {text('HAND_PEN')}
+        {text('PLUS')}
       </button>
       <Multiselect
         id={id}
