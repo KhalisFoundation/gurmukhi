@@ -6,5 +6,5 @@ export * from './word';
 export * from './wordlist';
 
 export interface StringyObject {
-  [key: string]: string;
+  [key: string]: any;
 }

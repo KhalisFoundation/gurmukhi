@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import regex from '../constants/regex';
 import { MiniWord, Option, SentenceType } from '../../types';
 import { capitalize } from './utils';
+import { regexMsg } from '../constants/regexMessage';
 
 interface IProps {
   id: string;
@@ -102,12 +103,14 @@ const SupportWord = ({
         className={showNewForm ? 'd-flex justify-content-around ' : 'd-none'}
       >
         <div>
-          {['synonyms', 'antonyms'].includes(type) ? text('WORD') : capitalize(type)}
+          <Form.Label>{['synonyms', 'antonyms'].includes(type) ? text('WORD') : capitalize(type)}</Form.Label>
           <Form.Control type="text" placeholder={placeholder} pattern={regex.gurmukhiWordRegex} value={supportWord} onChange={(event) => setSupportWord(event.target.value)} />
+          <Form.Control.Feedback type="invalid">{regexMsg.gurmukhiWordRegex}</Form.Control.Feedback>
         </div>
         <div>
-          {text('TRANSLATION')}
+          <Form.Label>{text('TRANSLATION')}</Form.Label>
           <Form.Control type="text" placeholder="Enter translation" pattern={regex.englishSentenceRegex} value={translation} onChange={(event) => setTranslation(event.target.value)} />
+          <Form.Control.Feedback type="invalid">{regexMsg.englishSentenceRegex}</Form.Control.Feedback>
         </div>
         <div>
           <button

@@ -5,6 +5,7 @@ import {
 import { createMultipleWordsAtOnce } from './controller';
 import { User } from 'firebase/auth';
 import { TFunction } from 'i18next';
+import sampleQuestions from '../constants/samples';
 
 export const separateIdsAndNewWords = (words: MiniWord[]): [MiniWord[], string[]] => {
   const newWordsList = [] as MiniWord[];
@@ -204,4 +205,28 @@ export const compareUpdatedAt = (timestamp1: TimestampType, timestamp2: Timestam
     return -1;
   }
   return 0;
+};
+
+const toTitleCase = (str: string) => str.charAt(0).toUpperCase() + str.substr(1).toLowerCase();
+
+export const getNumOfQuestionsFromType = (type: string, questions: QuestionType[]) => {
+  const filteredQuestions = questions.filter((question) => question.type === type);
+  return filteredQuestions.length === 0 ? '' : ` - ${filteredQuestions.length}`;
+};
+
+export const getSampleQuestion = (type: string) => {
+  sampleQuestions[type].type = type;
+  // convert object into readable text
+  let result = '';
+  Object.keys(sampleQuestions[type]).forEach((key) => {
+    if (key === 'options') {
+      result += `${toTitleCase(key)}: \n`;
+      sampleQuestions[type][key].forEach((option: Option) => {
+        result += ` • ${option}\n`;
+      });
+    } else {
+      result += `${toTitleCase(key)}: ${sampleQuestions[type][key]}\n`;
+    }
+  });
+  return result.trim();
 };

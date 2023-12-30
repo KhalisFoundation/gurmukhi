@@ -30,6 +30,8 @@ import {
   setOptionsDataForSubmit,
   splitAndCapitalize,
   hasValidOptions,
+  getNumOfQuestionsFromType,
+  getSampleQuestion,
 } from '../util';
 import SupportWord from '../util/SupportWord';
 import Options from '../util/Options';
@@ -47,6 +49,7 @@ import {
   removeData,
   saveWord,
 } from '../util/words';
+import { regexMsg } from '../constants/regexMessage';
 
 const EditWord = () => {
   const { wordid: wordId } = useParams();
@@ -73,6 +76,7 @@ const EditWord = () => {
   const [sentences, setSentences] = useState<SentenceType[]>([]);
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [words, setWords] = useState<MiniWord[]>([]);
+  const [wordExists, setWordExists] = useState<[boolean, string?]>([false]);
   const [wordlists, setWordlists] = useState<MiniWordlist[]>([]);
   const [synonyms, setSynonyms] = useState<MiniWord[]>([]);
   const [antonyms, setAntonyms] = useState<MiniWord[]>([]);
@@ -265,6 +269,16 @@ const EditWord = () => {
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.id === 'word' && words) {
+      const duplicate = words.find(
+        (obj) => obj.word === event.target.value.trim() && obj.word !== word.word,
+      );
+      if (duplicate && duplicate.id) {
+        setWordExists([true, duplicate.id]);
+      } else {
+        setWordExists([false]);
+      }
+    }
     setFormValues({
       ...formValues, [event.target.id]: event.target.value,
     });
@@ -274,6 +288,15 @@ const EditWord = () => {
     event.persist();
     setSupport(event.target.checked);
   };
+
+  useEffect(() => {
+    window.onkeydown = function (event: KeyboardEvent) {
+      if (event.keyCode === 13) {
+        event.preventDefault();
+        return false;
+      }
+    };
+  }, [formValues]);
 
   const editWord = async (formData: any) => {
     saveWord(formData, SUBMIT_TYPE.EDIT, user, word, getWord, wordId).finally(() => {
@@ -306,6 +329,12 @@ const EditWord = () => {
 
     if (synonyms.includes(formData.word) || antonyms.includes(formData.word)) {
       alert(text('WORD_CANNOT_BE_OWN'));
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.word.trim() === '' || formData.translation.trim() === '') {
+      alert(text('WORD_CANNOT_BE_EMPTY'));
       setIsLoading(false);
       return;
     }
@@ -348,232 +377,247 @@ const EditWord = () => {
       <h2>{text('EDIT_TEXT', { for: text('WORD') })}</h2>
       <Form className="rounded p-4 p-sm-3" hidden={submitted} noValidate validated={validated} onSubmit={handleSubmit}>
         <Form.Group className="mb-3" controlId="word" onChange={handleChange}>
-          <Form.Label>{text('WORD')}</Form.Label>
+          <Form.Label>
+            {text('WORD')}{' '}
+            {wordExists[0] && (
+              <span className='red'>
+                ({text('WORD_ALREADY_EXISTS')} -{' '}
+                {wordExists[1] && <a href={routes.editWord.replace(':wordid', wordExists[1])}>{text('EDIT')}</a>})
+              </span>
+            )}
+          </Form.Label>
           <Form.Control type="text" placeholder="ਸ਼ਬਦ" pattern={regex.gurmukhiWordRegex} defaultValue={word.word} required />
           <Form.Control.Feedback type="invalid">
-            {text('FEEDBACK_GURMUKHI', { for: 'a word' })}
+            {regexMsg.gurmukhiWordRegex}
           </Form.Control.Feedback>
         </Form.Group>
 
-        <Form.Group className="mb-3" controlId="translation" onChange={handleChange}>
-          <Form.Label>{text('TRANSLATION')}</Form.Label>
-          <Form.Control type="text" placeholder="Enter translation" pattern={regex.translationRegex} defaultValue={word.translation} required />
-          <Form.Control.Feedback type="invalid">
-            {text('FEEDBACK_ENGLISH', { for: 'translation' })}
-          </Form.Control.Feedback>
-        </Form.Group>
+        <div style={{
+          display: wordExists[0] ? 'none' : 'block',
+        }}>
+          <Form.Group className="mb-3" controlId="translation" onChange={handleChange}>
+            <Form.Label>{text('TRANSLATION')}</Form.Label>
+            <Form.Control type="text" placeholder="Enter translation" pattern={regex.translationRegex} defaultValue={word.translation} required />
+            <Form.Control.Feedback type="invalid">
+              {regexMsg.translationRegex}
+            </Form.Control.Feedback>
+          </Form.Group>
 
-        <Form.Group className="mb-3" controlId="meaning_punjabi" onChange={handleChange}>
-          <Form.Label>{text('MEANING_PUNJABI')}</Form.Label>
-          <Form.Control type="text" placeholder="ਇੱਥੇ ਅਰਥ ਦਰਜ ਕਰੋ" pattern={regex.gurmukhiSentenceRegex} defaultValue={word.meaning_punjabi} />
-          <Form.Control.Feedback type="invalid">
-            {text('FEEDBACK_GURMUKHI', { for: 'meaning' })}
-          </Form.Control.Feedback>
-        </Form.Group>
+          <Form.Group className="mb-3" controlId="meaning_punjabi" onChange={handleChange}>
+            <Form.Label>{text('MEANING_PUNJABI')}</Form.Label>
+            <Form.Control type="text" placeholder="ਇੱਥੇ ਅਰਥ ਦਰਜ ਕਰੋ" pattern={regex.gurmukhiSentenceRegex} defaultValue={word.meaning_punjabi} />
+            <Form.Control.Feedback type="invalid">
+              {regexMsg.gurmukhiSentenceRegex}
+            </Form.Control.Feedback>
+          </Form.Group>
 
-        <Form.Group className="mb-3" controlId="meaning_english" onChange={handleChange}>
-          <Form.Label>{text('MEANING_ENGLISH')}</Form.Label>
-          <Form.Control type="text" placeholder="Enter meaning" pattern={regex.translationRegex} defaultValue={word.meaning_english} />
-          <Form.Control.Feedback type="invalid">
-            {text('FEEDBACK_ENGLISH', { for: 'meaning' })}
-          </Form.Control.Feedback>
-        </Form.Group>
+          <Form.Group className="mb-3" controlId="meaning_english" onChange={handleChange}>
+            <Form.Label>{text('MEANING_ENGLISH')}</Form.Label>
+            <Form.Control type="text" placeholder="Enter meaning" pattern={regex.translationRegex} defaultValue={word.meaning_english} />
+            <Form.Control.Feedback type="invalid">
+              {regexMsg.translationRegex}
+            </Form.Control.Feedback>
+          </Form.Group>
 
-        <Form.Group className="mb-3" controlId="part_of_speech" onChange={handleChange}>
-          <Form.Label>{text('PART_OF_SPEECH')}</Form.Label>
-          <Form.Select aria-label="Choose part of speech" defaultValue={word.part_of_speech ?? PARTS_OF_SPEECH.NOUN}>
-            {Object.values(PARTS_OF_SPEECH).map((partOfSpeech) => (
-              <option key={partOfSpeech} value={partOfSpeech}>{capitalize(partOfSpeech)}</option>
-            ))}
-          </Form.Select>
-        </Form.Group>
+          <Form.Group className="mb-3" controlId="part_of_speech" onChange={handleChange}>
+            <Form.Label>{text('PART_OF_SPEECH')}</Form.Label>
+            <Form.Select aria-label="Choose part of speech" defaultValue={word.part_of_speech ?? PARTS_OF_SPEECH.NOUN}>
+              {Object.values(PARTS_OF_SPEECH).map((partOfSpeech) => (
+                <option key={partOfSpeech} value={partOfSpeech}>{capitalize(partOfSpeech)}</option>
+              ))}
+            </Form.Select>
+          </Form.Group>
 
-        <Form.Group className="mb-3" controlId="synonyms" onChange={handleChange}>
-          <SupportWord id="synonyms" name="Synonyms" word={synonyms} setWord={setSynonyms} words={words.filter((val) => val.id !== wordId)} type="synonyms" placeholder="ਸਮਾਨਾਰਥਕ ਸ਼ਬਦ" />
-        </Form.Group>
+          <Form.Group className="mb-3" controlId="synonyms" onChange={handleChange}>
+            <SupportWord id="synonyms" name="Synonyms" word={synonyms} setWord={setSynonyms} words={words.filter((val) => val.id !== wordId)} type="synonyms" placeholder="ਸਮਾਨਾਰਥਕ ਸ਼ਬਦ" />
+          </Form.Group>
 
-        <Form.Group className="mb-3" controlId="antonyms" onChange={handleChange}>
-          <SupportWord id="antonyms" name="Antonyms" word={antonyms} setWord={setAntonyms} words={words.filter((val) => val.id !== wordId)} type="antonyms" placeholder="ਵਿਰੋਧੀ ਸ਼ਬਦ" />
-        </Form.Group>
+          <Form.Group className="mb-3" controlId="antonyms" onChange={handleChange}>
+            <SupportWord id="antonyms" name="Antonyms" word={antonyms} setWord={setAntonyms} words={words.filter((val) => val.id !== wordId)} type="antonyms" placeholder="ਵਿਰੋਧੀ ਸ਼ਬਦ" />
+          </Form.Group>
 
-        <Form.Group className="mb-3" controlId="images" onChange={handleChange}>
-          <Form.Label>{text('IMAGES')}</Form.Label>
-          <Form.Control type="text" placeholder="imgUrl1, imgUrl2, ..." defaultValue={word.images} />
-        </Form.Group>
+          <Form.Group className="mb-3" controlId="images" onChange={handleChange}>
+            <Form.Label>{text('IMAGES')}</Form.Label>
+            <Form.Control type="text" placeholder="imgUrl1, imgUrl2, ..." defaultValue={word.images} />
+          </Form.Group>
 
-        <Form.Group className="mb-3" controlId="words">
-          <Form.Label>{text('CHOOSE_WORDLIST')}</Form.Label>
-          <Multiselect
-            options={wordlists}
-            displayValue="name"
-            showCheckbox
-            onSelect={onSelect}
-            onRemove={onRemove}
-            selectedValues={selectedWordlists}
-          />
-        </Form.Group>
+          <Form.Group className="mb-3" controlId="words">
+            <Form.Label>{text('CHOOSE_WORDLIST')}</Form.Label>
+            <Multiselect
+              options={wordlists}
+              displayValue="name"
+              showCheckbox
+              onSelect={onSelect}
+              onRemove={onRemove}
+              selectedValues={selectedWordlists}
+            />
+          </Form.Group>
 
-        <Form.Group className="mb-3" onChange={handleChange}>
-          <Form.Label
-            className="d-flex flex-row align-items-center justify-content-between w-100"
-          >
-            <h5>{capitalize(text('SENTENCES'))}</h5>
-            <div
-              className="d-flex align-items-center"
+          <Form.Group className="mb-3" onChange={handleChange}>
+            <Form.Label
+              className="d-flex flex-row align-items-center justify-content-between w-100"
             >
-              <button type="button" className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{text('PLUS')}</button>
-            </div>
-          </Form.Label>
-          {sentences && sentences.length ? sentences.map((sentence, sentenceId) => (
-            <div
-              key={sentenceId}
-              className="d-flex flex-column justify-content-between mb-3"
-            >
-              <div className="d-flex justify-content-between align-items-center">
-                <b>{text('SENTENCE_WITH_NUM', { num: sentenceId + 1 })}</b>
-                <button type="button" className="btn btn-sm" onClick={(e) => removeData(sentenceId, e, text, sentences, setSentences, SUBMIT_TYPE.EDIT, DATATYPES.SENTENCE, word.word)}>{text('BIN')}</button>
-              </div>
-              <div>
-                {text('SENTENCE')}
-                <Form.Control id={`sentence${sentenceId}`} className="m-1" type="text" value={sentence.sentence} placeholder="ਇੱਥੇ ਵਾਕ ਦਰਜ ਕਰੋ" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.gurmukhiSentenceRegex} />
-                <Form.Control.Feedback type="invalid" itemID={`sentence${sentenceId}`}>
-                  {text('FEEDBACK_GURMUKHI', { for: 'sentence' })}
-                </Form.Control.Feedback>
-                <br />
-
-                {text('TRANSLATION')}
-                <Form.Control id={`translation${sentenceId}`} className="m-1" type="text" value={sentence.translation} placeholder="Enter translation" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.translationRegex} required />
-                <Form.Control.Feedback type="invalid" itemID={`translation${sentenceId}`}>
-                  {text('FEEDBACK_ENGLISH', { for: 'translation' })}
-                </Form.Control.Feedback>
-              </div>
-              <hr />
-            </div>
-          )) : null}
-          <Button className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{text('ADD_NEW', { what: text('SENTENCE') })}</Button>
-        </Form.Group>
-
-        <Form.Group className="mb-3" onChange={handleChange}>
-          <Form.Label
-            className="d-flex flex-row align-items-center justify-content-between w-100"
-          >
-            <h5>{capitalize(text('QUESTIONS'))}</h5>
-            <div
-              className="d-flex align-items-center"
-            >
-              <button
-                type="button"
-                className="btn btn-sm"
-                onClick={(e) => addNewQuestion(e, setQuestions)}
+              <h5>{capitalize(text('SENTENCES'))}</h5>
+              <div
+                className="d-flex align-items-center"
               >
-                {text('PLUS')}
-              </button>
-            </div>
-          </Form.Label>
-          {questions && questions.length ? questions.map((question, questionId) => (
-            <div
-              key={questionId}
-              className="d-flex flex-column justify-content-between"
+                <button type="button" className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{text('PLUS')}</button>
+              </div>
+            </Form.Label>
+            {sentences && sentences.length ? sentences.map((sentence, sentenceId) => (
+              <div
+                key={sentenceId}
+                className="d-flex flex-column justify-content-between mb-3"
+              >
+                <div className="d-flex justify-content-between align-items-center">
+                  <b>{text('SENTENCE_WITH_NUM', { num: sentenceId + 1 })}</b>
+                  <button type="button" className="btn btn-sm" onClick={(e) => removeData(sentenceId, e, text, sentences, setSentences, SUBMIT_TYPE.EDIT, DATATYPES.SENTENCE, word.word)}>{text('BIN')}</button>
+                </div>
+                <div>
+                  {text('SENTENCE')}
+                  <Form.Control id={`sentence${sentenceId}`} className="m-1" type="text" value={sentence.sentence} placeholder="ਇੱਥੇ ਵਾਕ ਦਰਜ ਕਰੋ" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.gurmukhiSentenceRegex} />
+                  <Form.Control.Feedback type="invalid" itemID={`sentence${sentenceId}`}>
+                    {regexMsg.gurmukhiSentenceRegex}
+                  </Form.Control.Feedback>
+                  <br />
+
+                  {text('TRANSLATION')}
+                  <Form.Control id={`translation${sentenceId}`} className="m-1" type="text" value={sentence.translation} placeholder="Enter translation" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.translationRegex} required />
+                  <Form.Control.Feedback type="invalid" itemID={`translation${sentenceId}`}>
+                    {regexMsg.translationRegex}
+                  </Form.Control.Feedback>
+                </div>
+                <hr />
+              </div>
+            )) : null}
+            <Button className="btn btn-sm" onClick={(e) => addNewSentence(e, setSentences)}>{text('ADD_NEW', { what: text('SENTENCE') })}</Button>
+          </Form.Group>
+
+          <Form.Group className="mb-3" onChange={handleChange}>
+            <Form.Label
+              className="d-flex flex-row align-items-center justify-content-between w-100"
             >
-              <div className="d-flex justify-content-between align-items-center">
-                <b>{text('QUESTION_WITH_NUM', { num: questionId + 1 })}</b>
+              <h5>{capitalize(text('QUESTIONS'))}</h5>
+              <div
+                className="d-flex align-items-center"
+              >
                 <button
                   type="button"
                   className="btn btn-sm"
-                  onClick={(e) => removeData(questionId, e, text, questions, setQuestions, SUBMIT_TYPE.EDIT, DATATYPES.QUESTION, word.word)}
+                  onClick={(e) => addNewQuestion(e, setQuestions)}
                 >
-                  {text('BIN')}
+                  {text('PLUS')}
                 </button>
               </div>
-              <div>
-                <Form.Label>{text('QUESTION')}</Form.Label>
-                <Form.Control id={`question${questionId}`} className="m-1" type="text" value={question.question} placeholder="ਇੱਥੇ ਸਵਾਲ ਦਰਜ ਕਰੋ" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.gurmukhiQuestionRegex} required />
-                <Form.Control.Feedback type="invalid" itemID={`question${questionId}`}>
-                  {text('FEEDBACK_GURMUKHI', { for: 'question' })}
-                </Form.Control.Feedback>
-                <br />
-
-                <Form.Label>{text('TRANSLATION')}</Form.Label>
-                <Form.Control id={`qtranslation${questionId}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.englishQuestionTranslationRegex} />
-                <Form.Control.Feedback type="invalid" itemID={`qtranslation${questionId}`}>
-                  {text('FEEDBACK_ENGLISH', { for: 'translation' })}
-                </Form.Control.Feedback>
-                <br />
-
-                <Form.Label>{text('TYPE')}</Form.Label>
-                <Form.Select aria-label="Default select example" id={`type${questionId}`} value={question.type ?? 'context'} onChange={(e) => changeQuestion(e, questions, setQuestions)}>
-                  {Object.values(qtypes).map((questionType) => (
-                    <option key={questionType} value={questionType}>{questionType}</option>
-                  ))}
-                </Form.Select>
-
-                <Options id={`options${questionId}`} name="Options" word={(question.options ?? []) as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${questionId}`) as HTMLSelectElement)?.value} />
-                <Form.Control.Feedback type="invalid" itemID={`options${questionId}`}>
-                  {text('FEEDBACK', { for: 'options' })}
-                </Form.Control.Feedback>
-
-                <Form.Label>{text('ANSWER')}</Form.Label>
-                <Form.Select id={`answer${questionId}`} value={question.answer} onChange={(e) => changeQuestion(e, questions, setQuestions)} required>
-                  {question.options.length !== 0 && (question.options as Option[]).map((option, optionId) => (
-                    <option key={`${option.option}${optionId}`} value={optionId}>{option.option}</option>
-                  ))}
-                </Form.Select>
-                <Form.Control.Feedback type="invalid" itemID={`answer${questionId}`}>
-                  {text('FEEDBACK', { for: 'answer' })}
-                </Form.Control.Feedback>
-              </div>
-              <hr />
-            </div>
-          )) : null}
-          <Button className="btn btn-sm" onClick={(e) => addNewQuestion(e, setQuestions)}>{text('ADD_NEW', { what: text('QUESTION') })}</Button>
-        </Form.Group>
-
-        <Form.Group className="mb-3" controlId="notes" onChange={handleChange}>
-          <Form.Label>{text('NOTES')}</Form.Label>
-          <Form.Control as="textarea" rows={3} placeholder="Enter notes" defaultValue={word.notes} />
-        </Form.Group>
-
-        <div className="d-flex justify-content-between align-items-center">
-          <Form.Group className="mb-3" controlId="status" onChange={handleChange}>
-            <Form.Label>{text('STATUS')}</Form.Label>
-            <Form.Select aria-label="Default select example">
-              {statuses.map((status) => {
-                const value = splitAndCapitalize(status);
-                return (
-                  <option
-                    key={status + value.toString()}
-                    value={status}
-                    selected={status === word.status}
+            </Form.Label>
+            {questions && questions.length ? questions.map((question, questionId) => (
+              <div
+                key={questionId}
+                className="d-flex flex-column justify-content-between"
+              >
+                <div className="d-flex justify-content-between align-items-center">
+                  <b>{text('QUESTION_WITH_NUM', { num: questionId + 1 })}</b>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={(e) => removeData(questionId, e, text, questions, setQuestions, SUBMIT_TYPE.EDIT, DATATYPES.QUESTION, word.word)}
                   >
-                    {value}
-                  </option>
-                );
-              })}
-            </Form.Select>
+                    {text('BIN')}
+                  </button>
+                </div>
+                <div>
+                  <Form.Label>{text('QUESTION')}</Form.Label>
+                  <Form.Control id={`question${questionId}`} className="m-1" type="text" value={question.question} placeholder="ਇੱਥੇ ਸਵਾਲ ਦਰਜ ਕਰੋ" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.gurmukhiQuestionRegex} required />
+                  <Form.Control.Feedback type="invalid" itemID={`question${questionId}`}>
+                    {regexMsg.gurmukhiQuestionRegex}
+                  </Form.Control.Feedback>
+                  <br />
+
+                  <Form.Label>{text('TRANSLATION')}</Form.Label>
+                  <Form.Control id={`qtranslation${questionId}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.englishQuestionTranslationRegex} />
+                  <Form.Control.Feedback type="invalid" itemID={`qtranslation${questionId}`}>
+                    {regexMsg.englishQuestionTranslationRegex}
+                  </Form.Control.Feedback>
+                  <br />
+
+                  <Form.Label>{text('TYPE')}</Form.Label>
+                  <Form.Select aria-label="Default select example" id={`type${questionId}`} value={question.type ?? 'context'} onChange={(e) => changeQuestion(e, questions, setQuestions)}>
+                    {Object.values(qtypes).map((questionType) => (
+                      <option key={questionType} value={questionType}>{questionType + getNumOfQuestionsFromType(questionType, questions)}</option>
+                    ))}
+                  </Form.Select><br />
+
+                  <Form.Label>{text('SAMPLE_FOR_TYPE')}</Form.Label>
+                  <Form.Control id={`sample${questionId}`} as='textarea' rows={7} className="m-1 text-muted" value={getSampleQuestion(question.type)} disabled={true} />
+
+                  <Options id={`options${questionId}`} name="Options" word={(question.options ?? []) as Option[]} setWord={changeQOptions} words={words} placeholder="ਜਵਾਬ" type={(document.getElementById(`type${questionId}`) as HTMLSelectElement)?.value} />
+                  <Form.Control.Feedback type="invalid" itemID={`options${questionId}`}>
+                    {text('FEEDBACK', { for: 'options' })}
+                  </Form.Control.Feedback>
+
+                  <Form.Label>{text('ANSWER')}</Form.Label>
+                  <Form.Select id={`answer${questionId}`} value={question.answer} onChange={(e) => changeQuestion(e, questions, setQuestions)} required>
+                    {question.options.length !== 0 && (question.options as Option[]).map((option, optionId) => (
+                      <option key={`${option.option}${optionId}`} value={optionId}>{option.option}</option>
+                    ))}
+                  </Form.Select>
+                  <Form.Control.Feedback type="invalid" itemID={`answer${questionId}`}>
+                    {text('FEEDBACK', { for: 'answer' })}
+                  </Form.Control.Feedback>
+                </div>
+                <hr />
+              </div>
+            )) : null}
+            <Button className="btn btn-sm" onClick={(e) => addNewQuestion(e, setQuestions)}>{text('ADD_NEW', { what: text('QUESTION') })}</Button>
           </Form.Group>
-          <Form.Check
-            reverse
-            id="is_for_support"
-            type="switch"
-            checked={support}
-            onChange={handleSupport}
-            label={text('SUPPORT_LABEL')}
-          />
-        </div>
 
-        <div className="d-flex justify-content-around">
-          <Button variant="primary" type="submit">
-            {text('SUBMIT')}
-          </Button>
+          <Form.Group className="mb-3" controlId="notes" onChange={handleChange}>
+            <Form.Label>{text('NOTES')}</Form.Label>
+            <Form.Control as="textarea" rows={3} placeholder="Enter notes" defaultValue={word.notes} />
+          </Form.Group>
 
-          {word.status && [
-            roles.reviewer,
-            roles.admin,
-          ].includes(user.role) && reviewStatus.includes(word.status) ? (
-              <Button variant="primary" type="button" onClick={handleApprove}>
-                {text('APPROVE')}
-              </Button>
-            ) : null }
+          <div className="d-flex justify-content-between align-items-center">
+            <Form.Group className="mb-3" controlId="status" onChange={handleChange}>
+              <Form.Label>{text('STATUS')}</Form.Label>
+              <Form.Select aria-label="Default select example">
+                {statuses.map((status) => {
+                  const value = splitAndCapitalize(status);
+                  return (
+                    <option
+                      key={status + value.toString()}
+                      value={status}
+                      selected={status === word.status}
+                    >
+                      {value}
+                    </option>
+                  );
+                })}
+              </Form.Select>
+            </Form.Group>
+            <Form.Check
+              reverse
+              id="is_for_support"
+              type="switch"
+              checked={support}
+              onChange={handleSupport}
+              label={text('SUPPORT_LABEL')}
+            />
+          </div>
+
+          <div className="d-flex justify-content-around">
+            <Button variant="primary" type="submit">
+              {text('SAVE')}
+            </Button>
+
+            {word.status && [
+              roles.reviewer,
+              roles.admin,
+            ].includes(user.role) && reviewStatus.includes(word.status) ? (
+                <Button variant="primary" type="button" onClick={handleApprove}>
+                  {text('APPROVE')}
+                </Button>
+              ) : null }
+          </div>
         </div>
       </Form>
       {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
