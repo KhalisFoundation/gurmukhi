@@ -4,6 +4,7 @@ import Multiselect from 'multiselect-react-dropdown';
 import { useTranslation } from 'react-i18next';
 import regex from '../constants/regex';
 import { MiniWord, Option } from '../../types';
+import { regexMsg } from '../constants/regexMessage';
 
 interface IProps {
   id: string;
@@ -94,7 +95,7 @@ const Options = ({
         className="btn btn-sm"
         onClick={(event) => onViewToggle(event)}
       >
-        {text('PLUS')}
+        {showNewForm ? text('MINUS') : text('PLUS')}
       </button>
       <Multiselect
         id={id}
@@ -112,12 +113,12 @@ const Options = ({
         <div>
           {text('OPTION')}
           <Form.Control id={`option${id}`} type="text" placeholder={placeholder} pattern={regex.gurmukhiSentenceRegex} value={option} onChange={(event) => setOption(event.target.value)} />
-          <Form.Control.Feedback type="invalid" itemID={`option${id}`}>{text('FEEDBACK_GURMUKHI', { for: text('OPTION') })}</Form.Control.Feedback>
+          <Form.Control.Feedback type="invalid" itemID={`option${id}`}>{regexMsg.gurmukhiSentenceRegex}</Form.Control.Feedback>
         </div>
         <div>
           {text('TRANSLATION')}
           <Form.Control id={`otranslation${id}`} type="text" placeholder="Enter translation" pattern={regex.englishQuestionTranslationRegex} value={translation} onChange={(event) => setTranslation(event.target.value)} />
-          <Form.Control.Feedback type="invalid" itemID={`otranslation${id}`}>{text('FEEDBACK_ENGLISH', { for: text('TRANSLATION') })}</Form.Control.Feedback>
+          <Form.Control.Feedback type="invalid" itemID={`otranslation${id}`}>{regexMsg.englishQuestionTranslationRegex}</Form.Control.Feedback>
         </div>
         <div>
           <button

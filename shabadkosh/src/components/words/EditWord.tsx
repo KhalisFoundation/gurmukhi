@@ -49,6 +49,7 @@ import {
   removeData,
   saveWord,
 } from '../util/words';
+import { regexMsg } from '../constants/regexMessage';
 
 const EditWord = () => {
   const { wordid: wordId } = useParams();
@@ -332,6 +333,12 @@ const EditWord = () => {
       return;
     }
 
+    if (formData.word.trim() === '' || formData.translation.trim() === '') {
+      alert(text('WORD_CANNOT_BE_EMPTY'));
+      setIsLoading(false);
+      return;
+    }
+
     const wordIsNew = await isWordNew(formData.word, wordId);
     if (!wordIsNew) {
       alert(text('WORD_ALREADY_EXISTS'));
@@ -381,7 +388,7 @@ const EditWord = () => {
           </Form.Label>
           <Form.Control type="text" placeholder="ਸ਼ਬਦ" pattern={regex.gurmukhiWordRegex} defaultValue={word.word} required />
           <Form.Control.Feedback type="invalid">
-            {text('FEEDBACK_GURMUKHI', { for: 'a word' })}
+            {regexMsg.gurmukhiWordRegex}
           </Form.Control.Feedback>
         </Form.Group>
 
@@ -392,7 +399,7 @@ const EditWord = () => {
             <Form.Label>{text('TRANSLATION')}</Form.Label>
             <Form.Control type="text" placeholder="Enter translation" pattern={regex.translationRegex} defaultValue={word.translation} required />
             <Form.Control.Feedback type="invalid">
-              {text('FEEDBACK_ENGLISH', { for: 'translation' })}
+              {regexMsg.translationRegex}
             </Form.Control.Feedback>
           </Form.Group>
 
@@ -400,7 +407,7 @@ const EditWord = () => {
             <Form.Label>{text('MEANING_PUNJABI')}</Form.Label>
             <Form.Control type="text" placeholder="ਇੱਥੇ ਅਰਥ ਦਰਜ ਕਰੋ" pattern={regex.gurmukhiSentenceRegex} defaultValue={word.meaning_punjabi} />
             <Form.Control.Feedback type="invalid">
-              {text('FEEDBACK_GURMUKHI', { for: 'meaning' })}
+              {regexMsg.gurmukhiSentenceRegex}
             </Form.Control.Feedback>
           </Form.Group>
 
@@ -408,7 +415,7 @@ const EditWord = () => {
             <Form.Label>{text('MEANING_ENGLISH')}</Form.Label>
             <Form.Control type="text" placeholder="Enter meaning" pattern={regex.translationRegex} defaultValue={word.meaning_english} />
             <Form.Control.Feedback type="invalid">
-              {text('FEEDBACK_ENGLISH', { for: 'meaning' })}
+              {regexMsg.translationRegex}
             </Form.Control.Feedback>
           </Form.Group>
 
@@ -470,14 +477,14 @@ const EditWord = () => {
                   {text('SENTENCE')}
                   <Form.Control id={`sentence${sentenceId}`} className="m-1" type="text" value={sentence.sentence} placeholder="ਇੱਥੇ ਵਾਕ ਦਰਜ ਕਰੋ" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.gurmukhiSentenceRegex} />
                   <Form.Control.Feedback type="invalid" itemID={`sentence${sentenceId}`}>
-                    {text('FEEDBACK_GURMUKHI', { for: 'sentence' })}
+                    {regexMsg.gurmukhiSentenceRegex}
                   </Form.Control.Feedback>
                   <br />
 
                   {text('TRANSLATION')}
                   <Form.Control id={`translation${sentenceId}`} className="m-1" type="text" value={sentence.translation} placeholder="Enter translation" onChange={(e) => changeSentence(e, sentences, setSentences)} pattern={regex.translationRegex} required />
                   <Form.Control.Feedback type="invalid" itemID={`translation${sentenceId}`}>
-                    {text('FEEDBACK_ENGLISH', { for: 'translation' })}
+                    {regexMsg.translationRegex}
                   </Form.Control.Feedback>
                 </div>
                 <hr />
@@ -522,14 +529,14 @@ const EditWord = () => {
                   <Form.Label>{text('QUESTION')}</Form.Label>
                   <Form.Control id={`question${questionId}`} className="m-1" type="text" value={question.question} placeholder="ਇੱਥੇ ਸਵਾਲ ਦਰਜ ਕਰੋ" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.gurmukhiQuestionRegex} required />
                   <Form.Control.Feedback type="invalid" itemID={`question${questionId}`}>
-                    {text('FEEDBACK_GURMUKHI', { for: 'question' })}
+                    {regexMsg.gurmukhiQuestionRegex}
                   </Form.Control.Feedback>
                   <br />
 
                   <Form.Label>{text('TRANSLATION')}</Form.Label>
                   <Form.Control id={`qtranslation${questionId}`} className="m-1" type="text" value={question.translation} placeholder="Enter english translation of question" onChange={(e) => changeQuestion(e, questions, setQuestions)} pattern={regex.englishQuestionTranslationRegex} />
                   <Form.Control.Feedback type="invalid" itemID={`qtranslation${questionId}`}>
-                    {text('FEEDBACK_ENGLISH', { for: 'translation' })}
+                    {regexMsg.englishQuestionTranslationRegex}
                   </Form.Control.Feedback>
                   <br />
 
